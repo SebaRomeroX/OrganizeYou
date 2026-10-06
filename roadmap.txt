@@ -166,6 +166,28 @@ Tasks:
 [x] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
 [x] 8. Review and commit
 
+SIXTH GOAL: DISPLAY ORDER (PENDING FIRST)
+-----------------------------------------
+Decisions:
+- Sorting is display-only: localStorage keeps creation order and a
+  sorted copy is computed fresh on every render.
+- Sort key is the done flag only, using a stable sort: pending
+  tasks first (keeping relative creation order), done tasks last
+  (also keeping relative creation order).
+- Tasks are sorted once per render, then filtered per group, so a
+  multi-tagged task sits in the same relative spot in every
+  section it appears in.
+- No completion-time ordering among done tasks (kept minimal).
+- No extra wiring for cycles: tick/untick and the automatic cycle
+  reset already trigger render(), which re-sorts.
+
+Tasks:
+[ ] 1. Sort pending-first in renderTasks (one sorted copy, filter groups from it)
+[ ] 2. Verify: tick moves down, untick moves up, cycle auto-reset moves up
+[ ] 3. Multi-tag consistency across sections + done styling unaffected
+[ ] 4. Edge cases (empty groups, all-done list, subtask/counter tasks)
+[ ] 5. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -189,3 +211,4 @@ CHANGE LOG
 - 2026-10-06: Fifth goal implemented: cycle field + migration, calendar boundary helpers, dueAt on completion, 60s reset engine, modal cycle controls, task row badge.
 - 2026-10-06: Task row order changed: task name first (left), then cycle and counter badges.
 - 2026-10-06: Fifth goal reviewed and completed. All tasks done.
+- 2026-10-06: Sixth goal defined: display order - pending tasks first, done tasks at the bottom (display-only sort).
