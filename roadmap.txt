@@ -74,6 +74,30 @@ Tasks:
 [x] 7. Mobile-first styling for sections, chips and picker
 [x] 8. Review and commit
 
+THIRD GOAL: REUSABLE MODAL
+--------------------------
+Decisions:
+- One reusable modal component (modal.js) used by three actions:
+  new task, new category and edit task.
+- The inline forms are replaced by buttons ("+ New task",
+  "+ New category") that open the modal.
+- The inline tag picker is removed: the edit modal contains both
+  the task text and tag toggle chips (single place to edit a task).
+- Each task row shows an edit (pencil) button to open the modal.
+- Modal closes via X, backdrop click or Escape; focus moves to the
+  field on open; empty text is rejected by required validation.
+- Mobile: bottom sheet style; min-width 600px: centered dialog.
+
+Tasks:
+[ ] 1. Modal component: markup, open/close (X, backdrop, Escape), focus handling
+[ ] 2. Modal styles: mobile sheet -> centered dialog, dark theme
+[ ] 3. "New task" button -> modal creates task
+[ ] 4. "New category" button -> modal creates category
+[ ] 5. Edit task: pencil button -> modal renames task + toggles tags
+[ ] 6. Remove inline forms and inline tag picker
+[ ] 7. Empty states and edge cases (empty text rejected, Escape does not save)
+[ ] 8. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -85,3 +109,4 @@ CHANGE LOG
 - 2026-10-06: Dark theme UI applied (fixed, no toggle), theme-color meta added.
 - 2026-10-06: Layout reordered: task input, categories, task list; Uncategorized group moved last.
 - 2026-10-06: Contrast fixes: input/placeholder text colors, color-scheme dark, autofill override, done color lightened.
+- 2026-10-06: Third goal defined: reusable modal (new task, new category, edit task with tags).
