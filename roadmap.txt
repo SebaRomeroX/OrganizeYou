@@ -55,7 +55,9 @@ Decisions:
   migrate to an empty array (a task with no tags is valid).
 - Task list is grouped: one section per category in creation order,
   a task with multiple tags appears in each matching section, and
-  untagged tasks appear under "Uncategorized" at the top.
+  untagged tasks appear under "Uncategorized" at the end of the list.
+- Page layout order: task input first, then categories input, then
+  the grouped task list.
 - Tags are assigned after creation via a + button that opens an
   inline picker of category chips to toggle on/off.
 - Deleting a category removes it from all tasks (no confirmation).
@@ -81,3 +83,4 @@ CHANGE LOG
 - 2026-10-06: Second goal implemented: categories CRUD, task tags, grouped list, inline picker.
 - 2026-10-06: Second goal reviewed and committed. All tasks done.
 - 2026-10-06: Dark theme UI applied (fixed, no toggle), theme-color meta added.
+- 2026-10-06: Layout reordered: task input, categories, task list; Uncategorized group moved last.

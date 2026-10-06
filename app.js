@@ -143,12 +143,8 @@ function renderCategories() {
 function renderTasks() {
   taskList.innerHTML = "";
 
-  // Groups: Uncategorized first, then one per category in creation order
+  // Groups: one per category in creation order, Uncategorized last
   const groups = [];
-  groups.push({
-    title: "Uncategorized",
-    tasks: tasks.filter((t) => t.tags.length === 0),
-  });
   categories.forEach((cat) => {
     groups.push({
       title: cat.name,
@@ -156,6 +152,10 @@ function renderTasks() {
       tasks: tasks.filter((t) => t.tags.includes(cat.id)),
       categoryId: cat.id,
     });
+  });
+  groups.push({
+    title: "Uncategorized",
+    tasks: tasks.filter((t) => t.tags.length === 0),
   });
 
   groups.forEach((group) => {

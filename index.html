@@ -12,6 +12,19 @@
     <h1>OrganizeYou</h1>
     <p class="subtitle">Your to-do list</p>
 
+    <form id="task-form" class="task-form">
+      <input
+        type="text"
+        id="task-input"
+        class="task-input"
+        placeholder="What needs to be done?"
+        aria-label="New task"
+        autocomplete="off"
+        required
+      >
+      <button type="submit" class="add-btn">Add</button>
+    </form>
+
     <section class="categories" aria-label="Categories">
       <h2>Categories</h2>
       <form id="category-form" class="category-form">
@@ -29,19 +42,6 @@
       <div id="category-list" class="category-list"></div>
       <p id="no-categories" class="hint">No categories yet. Create one above!</p>
     </section>
-
-    <form id="task-form" class="task-form">
-      <input
-        type="text"
-        id="task-input"
-        class="task-input"
-        placeholder="What needs to be done?"
-        aria-label="New task"
-        autocomplete="off"
-        required
-      >
-      <button type="submit" class="add-btn">Add</button>
-    </form>
 
     <div id="task-list" class="task-list"></div>
 
