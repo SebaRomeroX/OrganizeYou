@@ -207,6 +207,64 @@ h2 {
   gap: 6px;
 }
 
+.task-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.counter {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-hover-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+}
+
+.counter.complete {
+  color: var(--color-done);
+  background: transparent;
+  border-color: var(--color-done);
+}
+
+.task-item input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Subtask checklist inside a task */
+.subtask-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.subtask-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.subtask-item.done span {
+  text-decoration: line-through;
+  color: var(--color-done);
+}
+
 .task-text {
   font-size: 1rem;
   word-break: break-word;
@@ -399,6 +457,111 @@ h2 {
 
 .modal-submit {
   width: 100%;
+}
+
+/* Repeat / subtask mode controls in the task modals */
+.modes {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mode-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.mode-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.mode-title {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.target-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.target-input {
+  width: 80px;
+  height: 44px;
+  text-align: center;
+}
+
+.target-suffix {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.add-row-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.add-row-btn:hover,
+.add-row-btn:focus {
+  border-color: var(--color-primary);
+  background: var(--color-hover-primary);
+}
+
+.subtask-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtask-row .modal-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+}
+
+.row-remove {
+  color: var(--color-danger);
+}
+
+.row-remove:hover,
+.row-remove:focus {
+  background: var(--color-hover-danger);
 }
 
 /* Empty state */

@@ -16,8 +16,28 @@ function loadTasks() {
     const raw = localStorage.getItem(TASKS_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
-    // Migrate tasks created before tags existed
-    return parsed.map((t) => ({ ...t, tags: Array.isArray(t.tags) ? t.tags : [] }));
+    // Migrate tasks created before repeats/subtasks existed
+    return parsed.map((t) => {
+      const repeats =
+        t.repeats && typeof t.repeats.target === "number" && t.repeats.target >= 1
+          ? {
+              current: Math.min(Math.max(0, Number(t.repeats.current) || 0), t.repeats.target),
+              target: t.repeats.target,
+            }
+          : null;
+      const subtasks = Array.isArray(t.subtasks)
+        ? t.subtasks.map((s) => ({
+            id: s.id || makeId(),
+            text: String(s.text || ""),
+            done: !!s.done,
+          }))
+        : [];
+      // Normalize the done flag for repetition/subtask tasks
+      let done = !!t.done;
+      if (repeats) done = repeats.current >= repeats.target;
+      else if (subtasks.length > 0) done = subtasks.every((s) => s.done);
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, done };
+    });
   } catch {
     return [];
   }
@@ -86,14 +106,177 @@ function orderedTags(selected) {
   return categories.map((c) => c.id).filter((id) => selected.has(id));
 }
 
+/* ---------- Repeat / subtask modes (mutually exclusive) ---------- */
+
+// Shared state for the repeat/subtask controls in the task modals
+function createModesState(task = null) {
+  return {
+    repeatOn: !!(task && task.repeats),
+    target: task && task.repeats ? task.repeats.target : 5,
+    // Carry ids/done over when editing so progress is preserved
+    subtasks: task && task.subtasks.length ? task.subtasks.map((s) => ({ ...s })) : [],
+  };
+}
+
+// Convert modal state to task data (mutually exclusive modes)
+function modesToData(state, original = null) {
+  if (state.repeatOn) {
+    const target = Math.max(1, Math.floor(Number(state.target)) || 1);
+    const current =
+      original && original.repeats ? Math.min(original.repeats.current, target) : 0;
+    return { repeats: { current, target }, subtasks: [] };
+  }
+  const subs = state.subtasks.filter((s) => s.text.trim() !== "");
+  if (subs.length > 0) {
+    return {
+      repeats: null,
+      subtasks: subs.map((s) => ({
+        id: s.id || makeId(),
+        text: s.text.trim(),
+        done: !!s.done,
+      })),
+    };
+  }
+  return { repeats: null, subtasks: [] };
+}
+
+// Repeat toggle + target input, and dynamic subtask rows.
+// Mutates `state` in place; re-renders via Modal.refresh().
+function buildModes(state) {
+  return (container) => {
+    const block = document.createElement("div");
+    block.className = "modes";
+
+    // --- Repeat ---
+    const repeat = document.createElement("div");
+    repeat.className = "mode-block";
+
+    const head = document.createElement("div");
+    head.className = "mode-head";
+
+    const toggleLabel = document.createElement("label");
+    toggleLabel.className = "mode-toggle";
+    const toggle = document.createElement("input");
+    toggle.type = "checkbox";
+    toggle.checked = state.repeatOn;
+    toggle.addEventListener("change", () => {
+      state.repeatOn = toggle.checked;
+      if (state.repeatOn) state.subtasks = []; // exclusivity: repeat clears subtasks
+      Modal.refresh();
+      const again = document.querySelector(".mode-toggle input");
+      if (again) again.focus();
+    });
+    const toggleText = document.createElement("span");
+    toggleText.textContent = "Repeat";
+    toggleLabel.append(toggle, toggleText);
+    head.appendChild(toggleLabel);
+
+    if (state.repeatOn) {
+      const targetWrap = document.createElement("label");
+      targetWrap.className = "target-wrap";
+      const targetInput = document.createElement("input");
+      targetInput.type = "number";
+      targetInput.min = "1";
+      targetInput.step = "1";
+      targetInput.className = "modal-input target-input";
+      targetInput.value = state.target;
+      targetInput.setAttribute("aria-label", "Repeat target");
+      targetInput.addEventListener("input", () => {
+        state.target = targetInput.value;
+      });
+      const suffix = document.createElement("span");
+      suffix.className = "target-suffix";
+      suffix.textContent = "times";
+      targetWrap.append(targetInput, suffix);
+      head.appendChild(targetWrap);
+    }
+
+    repeat.appendChild(head);
+    if (state.repeatOn) {
+      const help = document.createElement("p");
+      help.className = "hint";
+      help.textContent = "The task completes when the counter reaches the target.";
+      repeat.appendChild(help);
+    }
+    block.appendChild(repeat);
+
+    // --- Subtasks ---
+    const subs = document.createElement("div");
+    subs.className = "mode-block";
+
+    const subsHead = document.createElement("div");
+    subsHead.className = "mode-head";
+    const subsTitle = document.createElement("span");
+    subsTitle.className = "mode-title";
+    subsTitle.textContent = "Subtasks";
+    subsHead.appendChild(subsTitle);
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "add-row-btn";
+    addBtn.textContent = "+ Add subtask";
+    addBtn.addEventListener("click", () => {
+      if (state.repeatOn) state.repeatOn = false; // exclusivity
+      state.subtasks.push({ id: null, text: "", done: false });
+      Modal.refresh();
+      const rows = document.querySelectorAll(".subtask-row input");
+      if (rows.length) rows[rows.length - 1].focus();
+    });
+    subsHead.appendChild(addBtn);
+    subs.appendChild(subsHead);
+
+    if (state.subtasks.length > 0) {
+      const rowsWrap = document.createElement("div");
+      rowsWrap.className = "subtask-rows";
+      state.subtasks.forEach((sub, i) => {
+        const row = document.createElement("div");
+        row.className = "subtask-row";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "modal-input";
+        input.placeholder = "Subtask " + (i + 1);
+        input.value = sub.text;
+        input.addEventListener("input", () => {
+          sub.text = input.value;
+        });
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "icon-btn delete-btn row-remove";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", "Remove subtask");
+        remove.addEventListener("click", () => {
+          state.subtasks.splice(i, 1);
+          Modal.refresh();
+        });
+
+        row.append(input, remove);
+        rowsWrap.appendChild(row);
+      });
+      subs.appendChild(rowsWrap);
+    }
+    block.appendChild(subs);
+
+    container.appendChild(block);
+  };
+}
+
 function openNewTaskModal() {
   const selected = new Set(); // no tags pre-selected
+  const modes = createModesState();
   Modal.open({
     title: "New task",
     fields: [{ name: "text", label: "Task", placeholder: "What needs to be done?" }],
     submitLabel: "Add",
-    extra: buildTagChips(selected),
-    onSubmit: ({ text }) => addTask(text, orderedTags(selected)),
+    extra: (container) => {
+      buildModes(modes)(container);
+      buildTagChips(selected)(container);
+    },
+    onSubmit: ({ text }) => {
+      const { repeats, subtasks } = modesToData(modes);
+      addTask(text, orderedTags(selected), { repeats, subtasks });
+    },
   });
 }
 
@@ -159,15 +342,25 @@ function openEditTaskModal(id) {
 
   // Selected tags as a Set for easy toggling while the modal is open
   const selected = new Set(task.tags.filter((tagId) => categoryById(tagId)));
+  const modes = createModesState(task);
 
   Modal.open({
     title: "Edit task",
     fields: [{ name: "text", label: "Task", value: task.text }],
     submitLabel: "Save",
-    extra: buildTagChips(selected),
+    extra: (container) => {
+      buildModes(modes)(container);
+      buildTagChips(selected)(container);
+    },
     onSubmit: ({ text }) => {
+      const { repeats, subtasks } = modesToData(modes, task);
       task.text = text;
       task.tags = orderedTags(selected);
+      task.repeats = repeats;
+      task.subtasks = subtasks;
+      // Normalize completion for the (possibly new) mode
+      if (repeats) task.done = repeats.current >= repeats.target;
+      else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
       saveTasks();
       render();
     },
@@ -195,19 +388,54 @@ function deleteCategory(id) {
 
 /* ---------- Tasks ---------- */
 
-function addTask(text, tags = []) {
-  tasks.push({ id: makeId(), text, done: false, tags });
+function addTask(text, tags = [], mode = {}) {
+  tasks.push({
+    id: makeId(),
+    text,
+    done: false,
+    tags,
+    repeats: mode.repeats || null,
+    subtasks: mode.subtasks || [],
+  });
   saveTasks();
   render();
 }
 
 function toggleTask(id) {
   const task = tasks.find((t) => t.id === id);
-  if (task) {
+  if (!task) return;
+
+  if (task.repeats) {
+    if (task.done) {
+      // Completed repetition: untick starts a new cycle at 0
+      task.repeats.current = 0;
+      task.done = false;
+    } else {
+      // Ticking adds one; reaching the target completes the task
+      task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
+      task.done = task.repeats.current >= task.repeats.target;
+    }
+  } else if (task.subtasks.length > 0) {
+    return; // main checkbox is disabled for subtask tasks
+  } else {
     task.done = !task.done;
-    saveTasks();
-    render();
   }
+
+  saveTasks();
+  render();
+}
+
+function toggleSubtask(taskId, subtaskId) {
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return;
+  const sub = task.subtasks.find((s) => s.id === subtaskId);
+  if (!sub) return;
+
+  sub.done = !sub.done;
+  // Main task completes when every subtask is ticked
+  task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
+  saveTasks();
+  render();
 }
 
 function deleteTask(id) {
@@ -265,19 +493,64 @@ function renderTaskItem(task) {
   const li = document.createElement("li");
   li.className = "task-item" + (task.done ? " done" : "");
 
+  const hasSubs = task.subtasks.length > 0;
+
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = task.done;
-  checkbox.setAttribute("aria-label", "Mark task as done");
+  if (hasSubs) {
+    checkbox.disabled = true;
+    checkbox.setAttribute("aria-label", "Completes when every subtask is ticked");
+  } else if (task.repeats) {
+    checkbox.setAttribute(
+      "aria-label",
+      `Progress: ${task.repeats.current} of ${task.repeats.target}`
+    );
+  } else {
+    checkbox.setAttribute("aria-label", "Mark task as done");
+  }
   checkbox.addEventListener("change", () => toggleTask(task.id));
 
   const main = document.createElement("div");
   main.className = "task-main";
 
+  const line = document.createElement("div");
+  line.className = "task-line";
+
+  if (task.repeats) {
+    const badge = document.createElement("span");
+    badge.className = "counter" + (task.done ? " complete" : "");
+    badge.textContent = `${task.repeats.current}/${task.repeats.target}`;
+    line.appendChild(badge);
+  }
+
   const text = document.createElement("span");
   text.className = "task-text";
   text.textContent = task.text;
-  main.appendChild(text);
+  line.appendChild(text);
+  main.appendChild(line);
+
+  if (hasSubs) {
+    const subUl = document.createElement("ul");
+    subUl.className = "subtask-list";
+    task.subtasks.forEach((sub) => {
+      const subLi = document.createElement("li");
+      subLi.className = "subtask-item" + (sub.done ? " done" : "");
+
+      const subCheck = document.createElement("input");
+      subCheck.type = "checkbox";
+      subCheck.checked = sub.done;
+      subCheck.setAttribute("aria-label", `Subtask: ${sub.text}`);
+      subCheck.addEventListener("change", () => toggleSubtask(task.id, sub.id));
+
+      const subText = document.createElement("span");
+      subText.textContent = sub.text;
+
+      subLi.append(subCheck, subText);
+      subUl.appendChild(subLi);
+    });
+    main.appendChild(subUl);
+  }
 
   const tags = task.tags.map(categoryById).filter(Boolean);
   if (tags.length > 0) {

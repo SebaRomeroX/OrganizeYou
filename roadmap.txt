@@ -123,13 +123,13 @@ Decisions:
   repeats: null, subtasks: [].
 
 Tasks:
-[ ] 1. Data model: repeats + subtasks fields, migration for existing tasks
-[ ] 2. Repetition logic: increment/decrement, auto-complete at target, reset-to-0 on untick of done
-[ ] 3. Subtask logic: per-subtask toggle, auto-complete when all ticked, disabled main checkbox
-[ ] 4. Task row UI: counter badge, subtask checklist rendering
-[ ] 5. Modal: repeat toggle + target input (new & edit)
-[ ] 6. Modal: dynamic subtask rows (add/remove, min 1) with mode exclusivity
-[ ] 7. Edge cases (clamping, empty subtasks, migration)
+[x] 1. Data model: repeats + subtasks fields, migration for existing tasks
+[x] 2. Repetition logic: increment/decrement, auto-complete at target, reset-to-0 on untick of done
+[x] 3. Subtask logic: per-subtask toggle, auto-complete when all ticked, disabled main checkbox
+[x] 4. Task row UI: counter badge, subtask checklist rendering
+[x] 5. Modal: repeat toggle + target input (new & edit)
+[x] 6. Modal: dynamic subtask rows (add/remove, min 1) with mode exclusivity
+[x] 7. Edge cases (clamping, empty subtasks, migration)
 [ ] 8. Review and commit
 
 CHANGE LOG
@@ -149,3 +149,4 @@ CHANGE LOG
 - 2026-10-06: Third goal reviewed and completed. All tasks done.
 - 2026-10-06: New task modal gained tag toggle chips (shared with edit modal).
 - 2026-10-06: Fourth goal defined: repetitions (counter 2/5) and subtasks, mutually exclusive modes.
+- 2026-10-06: Fourth goal implemented: counter badge with auto-complete/reset cycle, subtask checklist with disabled main checkbox, modal repeat/subtask controls.
