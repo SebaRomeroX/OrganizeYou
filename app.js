@@ -645,19 +645,23 @@ function render() {
 function renderTasks() {
   taskList.innerHTML = "";
 
+  // Display-only sort: pending first, done last (stable, so
+  // relative creation order is kept within each block)
+  const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done));
+
   // Groups: one per category in creation order, Uncategorized last
   const groups = [];
   categories.forEach((cat) => {
     groups.push({
       title: cat.name,
       // Multi-tagged tasks repeat in each matching section
-      tasks: tasks.filter((t) => t.tags.includes(cat.id)),
+      tasks: sorted.filter((t) => t.tags.includes(cat.id)),
       categoryId: cat.id,
     });
   });
   groups.push({
     title: "Uncategorized",
-    tasks: tasks.filter((t) => t.tags.length === 0),
+    tasks: sorted.filter((t) => t.tags.length === 0),
   });
 
   groups.forEach((group) => {
