@@ -43,8 +43,36 @@ Tasks:
 [x] 9. Empty-state message when there are no tasks
 [x] 10. Final review and commit
 
+SECOND GOAL: CATEGORIES & TAGS
+------------------------------
+Decisions:
+- Categories are user-created and stored in localStorage
+  (organizeyou.categories). A tag is simply a reference to a
+  category, so tags and categories are the same list.
+- Tasks gain a tags field (array of category ids); existing tasks
+  migrate to an empty array (a task with no tags is valid).
+- Task list is grouped: one section per category in creation order,
+  a task with multiple tags appears in each matching section, and
+  untagged tasks appear under "Uncategorized" at the top.
+- Tags are assigned after creation via a + button that opens an
+  inline picker of category chips to toggle on/off.
+- Deleting a category removes it from all tasks (no confirmation).
+- No filtering by category in this goal (kept minimal).
+- Categories cannot be reordered yet (creation order).
+
+Tasks:
+[ ] 1. Category CRUD: create/delete, persist in localStorage
+[ ] 2. Task data model: tags field + migration for existing tasks
+[ ] 3. Grouped list: sections per category + Uncategorized, multi-tag repeat
+[ ] 4. Tag picker: + button with inline toggle chips
+[ ] 5. Deleting a category removes it from all tasks
+[ ] 6. Empty states (no categories / no tasks)
+[ ] 7. Mobile-first styling for sections, chips and picker
+[ ] 8. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
 - 2026-10-06: First goal completed: to-do list implemented (index.html, styles.css, app.js), mobile-first, localStorage persistence.
 - 2026-10-06: First goal reviewed and committed. All tasks done.
+- 2026-10-06: Second goal defined: categories & tags (grouped list, inline tag picker).
