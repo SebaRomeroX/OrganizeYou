@@ -821,8 +821,14 @@ function toggleTask(id) {
       task.repeats.current = 0;
       task.subtasks.forEach((s) => (s.done = false));
       task.done = false;
+    } else if (task.subtasks.length > 0) {
+      // Combined task: the main checkbox completes it immediately
+      // and fills the counter (subtasks stay as they are)
+      task.repeats.current = task.repeats.target;
+      task.done = true;
     } else {
-      // Ticking adds one; reaching the target completes the task
+      // Counter-only: ticking adds one; reaching the target
+      // completes the task
       task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
       task.done = task.repeats.current >= task.repeats.target;
     }
