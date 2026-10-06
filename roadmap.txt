@@ -1,0 +1,48 @@
+ORGANIZEYOU - PROJECT ROADMAP
+=============================
+
+WHAT THE PROJECT IS
+-------------------
+OrganizeYou is a personal organizer/reminder web app.
+First iteration focuses exclusively on a to-do list.
+
+WHAT WE'RE DOING AND HOW
+-------------------------
+- Keep the tech stack as simple as possible:
+  HTML, CSS and vanilla JavaScript. No frameworks, no build tools,
+  no external dependencies for now.
+- Single-page app runnable by opening index.html in a browser.
+- Data stored in the browser (localStorage) for now; a backend may
+  be considered in later iterations.
+- Mobile-first design: layout and styles are written for small
+  screens first, then enhanced for larger screens with min-width
+  media queries.
+
+PROJECT GUIDANCE
+----------------
+- Prefer simplicity over abstraction: no over-engineering.
+- Plain, readable code; small files; comments only where useful.
+- UI decisions follow a mobile-first approach: design for the
+  smallest screen first, scale up with breakpoints.
+- Touch-friendly targets (buttons/list items >= 44px), viewport
+  meta tag included.
+- All decisions, changes and progress are registered in this file.
+- Every completed task is checked off below and noted in the log.
+
+FIRST GOAL: TO-DO LIST
+----------------------
+Tasks:
+[ ] 1. Project setup: git init, base file structure (index.html, styles.css, app.js)
+[ ] 2. Static layout: input field, "Add" button, task list
+[ ] 3. Add a task from the input
+[ ] 4. Display tasks in the list
+[ ] 5. Mark a task as done (checkbox / strikethrough)
+[ ] 6. Delete a task
+[ ] 7. Persist tasks in localStorage (load on page start)
+[ ] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
+[ ] 9. Empty-state message when there are no tasks
+[ ] 10. Final review and commit
+
+CHANGE LOG
+----------
+- 2026-10-06: Project created, roadmap defined.
