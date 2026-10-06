@@ -709,12 +709,11 @@ function renderTaskItem(task) {
   const line = document.createElement("div");
   line.className = "task-line";
 
-  if (task.repeats) {
-    const badge = document.createElement("span");
-    badge.className = "counter" + (task.done ? " complete" : "");
-    badge.textContent = `${task.repeats.current}/${task.repeats.target}`;
-    line.appendChild(badge);
-  }
+  // Task name first, then the badges (cycle, counter)
+  const text = document.createElement("span");
+  text.className = "task-text";
+  text.textContent = task.text;
+  line.appendChild(text);
 
   if (task.cycle) {
     const badge = document.createElement("span");
@@ -723,10 +722,13 @@ function renderTaskItem(task) {
     line.appendChild(badge);
   }
 
-  const text = document.createElement("span");
-  text.className = "task-text";
-  text.textContent = task.text;
-  line.appendChild(text);
+  if (task.repeats) {
+    const badge = document.createElement("span");
+    badge.className = "counter" + (task.done ? " complete" : "");
+    badge.textContent = `${task.repeats.current}/${task.repeats.target}`;
+    line.appendChild(badge);
+  }
+
   main.appendChild(line);
 
   if (hasSubs) {

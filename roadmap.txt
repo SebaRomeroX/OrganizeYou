@@ -187,3 +187,4 @@ CHANGE LOG
 - 2026-10-06: Fourth goal reviewed and completed. All tasks done.
 - 2026-10-06: Fifth goal defined: cycles - recurring tasks (hour/day/week/month, calendar-aligned, badge display).
 - 2026-10-06: Fifth goal implemented: cycle field + migration, calendar boundary helpers, dueAt on completion, 60s reset engine, modal cycle controls, task row badge.
+- 2026-10-06: Task row order changed: task name first (left), then cycle and counter badges.
