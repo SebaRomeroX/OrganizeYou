@@ -17,6 +17,8 @@ WHAT WE'RE DOING AND HOW
 - Mobile-first design: layout and styles are written for small
   screens first, then enhanced for larger screens with min-width
   media queries.
+- Fixed dark theme UI: dark gray palette (no pure black), no theme
+  toggle. Colors are defined as CSS variables in :root.
 
 PROJECT GUIDANCE
 ----------------
@@ -78,3 +80,4 @@ CHANGE LOG
 - 2026-10-06: Second goal defined: categories - 2026-10-06: Second goal defined: categories & tags (grouped list, inline tag picker). tags (grouped list, inline tag picker).
 - 2026-10-06: Second goal implemented: categories CRUD, task tags, grouped list, inline picker.
 - 2026-10-06: Second goal reviewed and committed. All tasks done.
+- 2026-10-06: Dark theme UI applied (fixed, no toggle), theme-color meta added.
