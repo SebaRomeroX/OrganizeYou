@@ -243,11 +243,11 @@ Decisions:
   hour math.
 
 Tasks:
-[ ] 1. nextCycleBoundary hour branch: elapsed from the completion moment
-[ ] 2. Update doc comments (hours no longer anchored to local midnight)
-[ ] 3. Verify callers: syncCycleDue, edit-submit recompute, migration fallback, resetDueCycles
-[ ] 4. Edge cases (crossing midnight, DST true elapsed, old stored dueAts still fire)
-[ ] 5. Update the Node test harness hour cases (10:30 + 2h -> 12:30, 23:30 + 2h -> 01:30, +1h, +24h)
+[x] 1. nextCycleBoundary hour branch: elapsed from the completion moment
+[x] 2. Update doc comments (hours no longer anchored to local midnight)
+[x] 3. Verify callers: syncCycleDue, edit-submit recompute, migration fallback, resetDueCycles
+[x] 4. Edge cases (crossing midnight, DST true elapsed, old stored dueAts still fire)
+[x] 5. Update the Node test harness hour cases (10:30 + 2h -> 12:30, 23:30 + 2h -> 01:30, +1h, +24h)
 [ ] 6. Review and commit
 
 CHANGE LOG
@@ -280,3 +280,4 @@ CHANGE LOG
 - 2026-10-06: Seventh goal implemented: exclusivity removed, subtask ticks feed the counter (no decrement on untick), counter-driven completion, main checkbox full reset, modal target auto-syncs with subtask count.
 - 2026-10-06: Seventh goal reviewed and completed. All tasks done.
 - 2026-10-06: Eighth goal defined: cycle timing - hours elapsed from completion, day/week/month stay calendar-aligned (amends goal 5).
+- 2026-10-06: Eighth goal implemented: hour cycles due at completion + N hours (true elapsed ms), day/week/month boundaries untouched.

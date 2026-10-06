@@ -128,10 +128,11 @@ function orderedTags(selected) {
 
 /* ---------- Cycles (recurring schedules) ---------- */
 
-// Next calendar boundary strictly after `from` (defaults to now).
-// Calendar-aligned: hours from local midnight, days at local
-// midnight, weeks on Monday, months on the 1st. For every N > 1
-// the periods anchor to the epoch (see roadmap).
+// Next due moment strictly after `from` (defaults to now).
+// Hours are elapsed: `from` + N hours exactly (true duration in
+// ms, so it holds even across DST). Day/week/month are
+// calendar-aligned: next local midnight, next Monday, next 1st;
+// for every N > 1 the periods anchor to the epoch (see roadmap).
 function nextCycleBoundary(cycle, from = new Date()) {
   const n = Math.max(1, Math.floor(Number(cycle.every)) || 1);
   const y = from.getFullYear();
@@ -139,10 +140,8 @@ function nextCycleBoundary(cycle, from = new Date()) {
   const d = from.getDate();
 
   if (cycle.unit === "hour") {
-    const hourFrac = from.getHours() + from.getMinutes() / 60;
-    const k = Math.floor(hourFrac / n) + 1;
-    // Hour field may exceed 23: the Date constructor rolls it over
-    return new Date(y, mo, d, k * n).getTime();
+    // Elapsed: exactly N hours after the completion moment
+    return from.getTime() + n * 3600000;
   }
 
   // Calendar day number (DST-proof), local midnight conversion below
