@@ -84,3 +84,4 @@ CHANGE LOG
 - 2026-10-06: Second goal reviewed and committed. All tasks done.
 - 2026-10-06: Dark theme UI applied (fixed, no toggle), theme-color meta added.
 - 2026-10-06: Layout reordered: task input, categories, task list; Uncategorized group moved last.
+- 2026-10-06: Contrast fixes: input/placeholder text colors, color-scheme dark, autofill override, done color lightened.
