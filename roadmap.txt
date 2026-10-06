@@ -132,6 +132,40 @@ Tasks:
 [x] 7. Edge cases (clamping, empty subtasks, migration)
 [ ] 8. Review and commit
 
+FIFTH GOAL: CYCLES (RECURRING TASKS)
+------------------------------------
+Decisions:
+- A cycle is orthogonal to the other modes: any task can have a
+  cycle and it combines with counter repeats and subtasks (the
+  repeat-vs-subtasks exclusivity is unchanged).
+- Data: task.cycle = { every: N >= 1, unit: "hour"|"day"|"week"|
+  "month", dueAt: timestamp | null }; migration adds cycle: null.
+- Boundaries are calendar-aligned: every N hours from local
+  midnight (2h -> 00, 02, 04...), every N days at local midnight,
+  every N weeks on Monday, every N months on the 1st. For N > 1
+  periods anchor to the epoch; N = 1 behaves as expected.
+- When a cycle task becomes done (tick, counter at target, or all
+  subtasks ticked) dueAt = next boundary after completion;
+  unticking a done task clears dueAt.
+- Reset: when now >= dueAt, the task goes back to active with
+  progress cleared (counter 0, subtasks unchecked, dueAt null).
+  Checked on page load and every 60s while the tab is open.
+- Task row shows a static badge ("Every 2h", "Every day"), same
+  family as the counter badge; no due/overdue highlight.
+- Modal (new & edit): third block "Cycle" with checkbox toggle,
+  number input (min 1) and unit select; default "1 day". Enabling
+  it does not touch the repeat/subtask controls.
+
+Tasks:
+[ ] 1. Data model: cycle field + migration for existing tasks
+[ ] 2. Calendar boundary helpers (hour/day/week/month, N>1 anchors)
+[ ] 3. dueAt on completion (tick, counter target, subtasks) + clear on untick
+[ ] 4. Reset engine: on load + every 60s while open
+[ ] 5. Modal: cycle toggle + every/unit controls (new & edit)
+[ ] 6. Task row: cycle badge
+[ ] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
+[x] 8. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -150,3 +184,5 @@ CHANGE LOG
 - 2026-10-06: New task modal gained tag toggle chips (shared with edit modal).
 - 2026-10-06: Fourth goal defined: repetitions (counter 2/5) and subtasks, mutually exclusive modes.
 - 2026-10-06: Fourth goal implemented: counter badge with auto-complete/reset cycle, subtask checklist with disabled main checkbox, modal repeat/subtask controls.
+- 2026-10-06: Fourth goal reviewed and completed. All tasks done.
+- 2026-10-06: Fifth goal defined: cycles - recurring tasks (hour/day/week/month, calendar-aligned, badge display).
