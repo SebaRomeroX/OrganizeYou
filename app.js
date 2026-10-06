@@ -202,7 +202,7 @@ function resetDueCycles() {
   return changed;
 }
 
-/* ---------- Repeat / subtask modes (mutually exclusive) ---------- */
+/* ---------- Repeat / subtask / cycle modes (combinable) ---------- */
 
 // Shared state for the repeat/subtask/cycle controls in the task modals
 function createModesState(task = null) {
@@ -218,8 +218,8 @@ function createModesState(task = null) {
   };
 }
 
-// Convert modal state to task data (repeat vs subtasks mutually
-// exclusive; cycle independent). Returns the cycle schedule with a
+// Convert modal state to task data (repeat and subtasks can
+// combine; cycle independent). Returns the cycle schedule with a
 // null dueAt — syncCycleDue fills it in when the task is done.
 function modesToData(state, original = null) {
   let cycle = null;
@@ -228,25 +228,20 @@ function modesToData(state, original = null) {
     const unit = CYCLE_UNITS.includes(state.cycleUnit) ? state.cycleUnit : "day";
     cycle = { every, unit, dueAt: null };
   }
+  let repeats = null;
   if (state.repeatOn) {
     const target = Math.max(1, Math.floor(Number(state.target)) || 1);
     const current =
       original && original.repeats ? Math.min(original.repeats.current, target) : 0;
-    return { repeats: { current, target }, subtasks: [], cycle };
+    repeats = { current, target };
   }
   const subs = state.subtasks.filter((s) => s.text.trim() !== "");
-  if (subs.length > 0) {
-    return {
-      repeats: null,
-      cycle,
-      subtasks: subs.map((s) => ({
-        id: s.id || makeId(),
-        text: s.text.trim(),
-        done: !!s.done,
-      })),
-    };
-  }
-  return { repeats: null, subtasks: [], cycle };
+  const subtasks = subs.map((s) => ({
+    id: s.id || makeId(),
+    text: s.text.trim(),
+    done: !!s.done,
+  }));
+  return { repeats, subtasks, cycle };
 }
 
 // Repeat toggle + target input, and dynamic subtask rows.
@@ -270,7 +265,11 @@ function buildModes(state) {
     toggle.checked = state.repeatOn;
     toggle.addEventListener("change", () => {
       state.repeatOn = toggle.checked;
-      if (state.repeatOn) state.subtasks = []; // exclusivity: repeat clears subtasks
+      // Suggest target = subtask count when both modes are on
+      // (a manually typed target sticks until subtasks change)
+      if (state.repeatOn && state.subtasks.length > 0) {
+        state.target = state.subtasks.length;
+      }
       Modal.refresh();
       const again = document.querySelector(".repeat-toggle input");
       if (again) again.focus();
@@ -304,7 +303,10 @@ function buildModes(state) {
     if (state.repeatOn) {
       const help = document.createElement("p");
       help.className = "hint";
-      help.textContent = "The task completes when the counter reaches the target.";
+      help.textContent =
+        state.subtasks.length > 0
+          ? "Each subtask tick adds 1 to the counter; the task completes at the target."
+          : "The task completes when the counter reaches the target.";
       repeat.appendChild(help);
     }
     block.appendChild(repeat);
@@ -391,8 +393,9 @@ function buildModes(state) {
     addBtn.className = "add-row-btn";
     addBtn.textContent = "+ Add subtask";
     addBtn.addEventListener("click", () => {
-      if (state.repeatOn) state.repeatOn = false; // exclusivity
       state.subtasks.push({ id: null, text: "", done: false });
+      // Suggest target = subtask count when repeat is on
+      if (state.repeatOn) state.target = state.subtasks.length;
       Modal.refresh();
       const rows = document.querySelectorAll(".subtask-row input");
       if (rows.length) rows[rows.length - 1].focus();
@@ -423,6 +426,10 @@ function buildModes(state) {
         remove.setAttribute("aria-label", "Remove subtask");
         remove.addEventListener("click", () => {
           state.subtasks.splice(i, 1);
+          // Keep the suggested target in step with the subtask count
+          if (state.repeatOn && state.subtasks.length > 0) {
+            state.target = state.subtasks.length;
+          }
           Modal.refresh();
         });
 
@@ -598,7 +605,9 @@ function toggleTask(id) {
   if (task.repeats) {
     if (task.done) {
       // Completed repetition: untick starts a new cycle at 0
+      // and clears any subtasks (full reset)
       task.repeats.current = 0;
+      task.subtasks.forEach((s) => (s.done = false));
       task.done = false;
     } else {
       // Ticking adds one; reaching the target completes the task
@@ -606,7 +615,7 @@ function toggleTask(id) {
       task.done = task.repeats.current >= task.repeats.target;
     }
   } else if (task.subtasks.length > 0) {
-    return; // main checkbox is disabled for subtask tasks
+    return; // main checkbox is disabled for subtask-only tasks
   } else {
     task.done = !task.done;
   }
@@ -623,8 +632,19 @@ function toggleSubtask(taskId, subtaskId) {
   if (!sub) return;
 
   sub.done = !sub.done;
-  // Main task completes when every subtask is ticked
-  task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
+
+  if (task.repeats) {
+    // Combined task: ticks feed the counter; unticking never
+    // decrements it (re-ticking adds +1 again)
+    if (sub.done) {
+      task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
+    }
+    // Completion is counter-driven, leftover subtasks don't block it
+    task.done = task.repeats.current >= task.repeats.target;
+  } else {
+    // Subtask-only: completes when every subtask is ticked
+    task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
+  }
   syncCycleDue(task);
   saveTasks();
   render();
@@ -694,14 +714,15 @@ function renderTaskItem(task) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = task.done;
-  if (hasSubs) {
-    checkbox.disabled = true;
-    checkbox.setAttribute("aria-label", "Completes when every subtask is ticked");
-  } else if (task.repeats) {
+  if (task.repeats) {
+    // Counter tasks (with or without subtasks): clickable
     checkbox.setAttribute(
       "aria-label",
       `Progress: ${task.repeats.current} of ${task.repeats.target}`
     );
+  } else if (hasSubs) {
+    checkbox.disabled = true;
+    checkbox.setAttribute("aria-label", "Completes when every subtask is ticked");
   } else {
     checkbox.setAttribute("aria-label", "Mark task as done");
   }
