@@ -164,7 +164,7 @@ Tasks:
 [x] 5. Modal: cycle toggle + every/unit controls (new & edit)
 [x] 6. Task row: cycle badge
 [x] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 CHANGE LOG
 ----------
@@ -188,3 +188,4 @@ CHANGE LOG
 - 2026-10-06: Fifth goal defined: cycles - recurring tasks (hour/day/week/month, calendar-aligned, badge display).
 - 2026-10-06: Fifth goal implemented: cycle field + migration, calendar boundary helpers, dueAt on completion, 60s reset engine, modal cycle controls, task row badge.
 - 2026-10-06: Task row order changed: task name first (left), then cycle and counter badges.
+- 2026-10-06: Fifth goal reviewed and completed. All tasks done.
