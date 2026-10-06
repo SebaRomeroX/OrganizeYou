@@ -100,7 +100,7 @@ Tasks:
 [x] 5. Edit task: pencil button -> modal renames task + toggles tags
 [x] 6. Remove inline forms and inline tag picker
 [x] 7. Empty states and edge cases (empty text rejected, Escape does not save)
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 CHANGE LOG
 ----------
@@ -116,3 +116,4 @@ CHANGE LOG
 - 2026-10-06: Third goal defined: reusable modal (new task, new category, edit task with tags).
 - 2026-10-06: Third goal implemented: modal.js component, action buttons, edit task modal with tag chips; inline forms and picker removed.
 - 2026-10-06: Categories list moved inside the categories modal (button "Categories"); modal stays open on add/delete.
+- 2026-10-06: Third goal reviewed and completed. All tasks done.
