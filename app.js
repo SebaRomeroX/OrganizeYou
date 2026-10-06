@@ -2,6 +2,7 @@
 
 const TASKS_KEY = "organizeyou.tasks";
 const CATEGORIES_KEY = "organizeyou.categories";
+const CYCLE_UNITS = ["hour", "day", "week", "month"];
 
 const newTaskBtn = document.getElementById("new-task-btn");
 const categoriesBtn = document.getElementById("categories-btn");
@@ -36,7 +37,26 @@ function loadTasks() {
       let done = !!t.done;
       if (repeats) done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) done = subtasks.every((s) => s.done);
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, done };
+
+      // Cycle: valid schedule object or null
+      const cycle =
+        t.cycle &&
+        CYCLE_UNITS.includes(t.cycle.unit) &&
+        Number(t.cycle.every) >= 1
+          ? {
+              every: Math.floor(Number(t.cycle.every)),
+              unit: t.cycle.unit,
+              dueAt: Number.isFinite(t.cycle.dueAt) ? t.cycle.dueAt : null,
+            }
+          : null;
+      // A done cycle task with no dueAt is unknown data: treat as
+      // completed now. Past dueAts are left alone (reset engine
+      // handles them right after load).
+      if (cycle && done && cycle.dueAt == null) {
+        cycle.dueAt = nextCycleBoundary(cycle);
+      }
+
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, done };
     });
   } catch {
     return [];
@@ -106,30 +126,119 @@ function orderedTags(selected) {
   return categories.map((c) => c.id).filter((id) => selected.has(id));
 }
 
+/* ---------- Cycles (recurring schedules) ---------- */
+
+// Next calendar boundary strictly after `from` (defaults to now).
+// Calendar-aligned: hours from local midnight, days at local
+// midnight, weeks on Monday, months on the 1st. For every N > 1
+// the periods anchor to the epoch (see roadmap).
+function nextCycleBoundary(cycle, from = new Date()) {
+  const n = Math.max(1, Math.floor(Number(cycle.every)) || 1);
+  const y = from.getFullYear();
+  const mo = from.getMonth();
+  const d = from.getDate();
+
+  if (cycle.unit === "hour") {
+    const hourFrac = from.getHours() + from.getMinutes() / 60;
+    const k = Math.floor(hourFrac / n) + 1;
+    // Hour field may exceed 23: the Date constructor rolls it over
+    return new Date(y, mo, d, k * n).getTime();
+  }
+
+  // Calendar day number (DST-proof), local midnight conversion below
+  const dayNum = Math.floor(Date.UTC(y, mo, d) / 86400000);
+  let next;
+  if (cycle.unit === "day") {
+    next = (Math.floor(dayNum / n) + 1) * n;
+  } else if (cycle.unit === "week") {
+    const MONDAY = 4; // day number of 1970-01-05, a Monday
+    next = (Math.floor((dayNum - MONDAY) / (7 * n)) + 1) * 7 * n + MONDAY;
+  } else {
+    // month: months since 1970-01 (epoch anchor, see roadmap)
+    const mIdx = (y - 1970) * 12 + mo;
+    next = (Math.floor(mIdx / n) + 1) * n;
+    const yr = 1970 + Math.floor(next / 12);
+    const mo2 = ((next % 12) + 12) % 12;
+    return new Date(yr, mo2, 1).getTime();
+  }
+  const nd = new Date(next * 86400000);
+  return new Date(nd.getUTCFullYear(), nd.getUTCMonth(), nd.getUTCDate()).getTime();
+}
+
+// Badge text: "Every day", "Every 2h", "Every 3 weeks"...
+function cycleLabel(cycle) {
+  const n = Math.max(1, Math.floor(Number(cycle.every)) || 1);
+  if (cycle.unit === "hour") return n === 1 ? "Every hour" : `Every ${n}h`;
+  const names = { day: "days", week: "weeks", month: "months" };
+  const one = { day: "day", week: "week", month: "month" };
+  return `Every ${n === 1 ? one[cycle.unit] : n + " " + names[cycle.unit]}`;
+}
+
+// Keep cycle.dueAt in sync with the task's done state: a done task
+// is due at the next boundary, an active one has nothing pending.
+function syncCycleDue(task) {
+  if (!task.cycle) return;
+  task.cycle.dueAt = task.done ? nextCycleBoundary(task.cycle) : null;
+}
+
+// Reset every cycle task whose time has come (progress cleared).
+// Returns true if anything changed.
+function resetDueCycles() {
+  const now = Date.now();
+  let changed = false;
+  tasks.forEach((t) => {
+    if (t.cycle && t.done && t.cycle.dueAt != null && now >= t.cycle.dueAt) {
+      t.done = false;
+      if (t.repeats) t.repeats.current = 0;
+      t.subtasks.forEach((s) => (s.done = false));
+      t.cycle.dueAt = null;
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveTasks();
+    render();
+  }
+  return changed;
+}
+
 /* ---------- Repeat / subtask modes (mutually exclusive) ---------- */
 
-// Shared state for the repeat/subtask controls in the task modals
+// Shared state for the repeat/subtask/cycle controls in the task modals
 function createModesState(task = null) {
   return {
     repeatOn: !!(task && task.repeats),
     target: task && task.repeats ? task.repeats.target : 5,
     // Carry ids/done over when editing so progress is preserved
     subtasks: task && task.subtasks.length ? task.subtasks.map((s) => ({ ...s })) : [],
+    // Cycle is orthogonal: it combines with repeat/subtasks
+    cycleOn: !!(task && task.cycle),
+    cycleEvery: task && task.cycle ? task.cycle.every : 1,
+    cycleUnit: task && task.cycle ? task.cycle.unit : "day",
   };
 }
 
-// Convert modal state to task data (mutually exclusive modes)
+// Convert modal state to task data (repeat vs subtasks mutually
+// exclusive; cycle independent). Returns the cycle schedule with a
+// null dueAt — syncCycleDue fills it in when the task is done.
 function modesToData(state, original = null) {
+  let cycle = null;
+  if (state.cycleOn) {
+    const every = Math.max(1, Math.floor(Number(state.cycleEvery)) || 1);
+    const unit = CYCLE_UNITS.includes(state.cycleUnit) ? state.cycleUnit : "day";
+    cycle = { every, unit, dueAt: null };
+  }
   if (state.repeatOn) {
     const target = Math.max(1, Math.floor(Number(state.target)) || 1);
     const current =
       original && original.repeats ? Math.min(original.repeats.current, target) : 0;
-    return { repeats: { current, target }, subtasks: [] };
+    return { repeats: { current, target }, subtasks: [], cycle };
   }
   const subs = state.subtasks.filter((s) => s.text.trim() !== "");
   if (subs.length > 0) {
     return {
       repeats: null,
+      cycle,
       subtasks: subs.map((s) => ({
         id: s.id || makeId(),
         text: s.text.trim(),
@@ -137,7 +246,7 @@ function modesToData(state, original = null) {
       })),
     };
   }
-  return { repeats: null, subtasks: [] };
+  return { repeats: null, subtasks: [], cycle };
 }
 
 // Repeat toggle + target input, and dynamic subtask rows.
@@ -155,7 +264,7 @@ function buildModes(state) {
     head.className = "mode-head";
 
     const toggleLabel = document.createElement("label");
-    toggleLabel.className = "mode-toggle";
+    toggleLabel.className = "mode-toggle repeat-toggle";
     const toggle = document.createElement("input");
     toggle.type = "checkbox";
     toggle.checked = state.repeatOn;
@@ -163,7 +272,7 @@ function buildModes(state) {
       state.repeatOn = toggle.checked;
       if (state.repeatOn) state.subtasks = []; // exclusivity: repeat clears subtasks
       Modal.refresh();
-      const again = document.querySelector(".mode-toggle input");
+      const again = document.querySelector(".repeat-toggle input");
       if (again) again.focus();
     });
     const toggleText = document.createElement("span");
@@ -199,6 +308,72 @@ function buildModes(state) {
       repeat.appendChild(help);
     }
     block.appendChild(repeat);
+
+    // --- Cycle (orthogonal: combines with repeat/subtasks) ---
+    const cyc = document.createElement("div");
+    cyc.className = "mode-block";
+
+    const cycHead = document.createElement("div");
+    cycHead.className = "mode-head";
+
+    const cycLabel = document.createElement("label");
+    cycLabel.className = "mode-toggle cycle-toggle";
+    const cycToggle = document.createElement("input");
+    cycToggle.type = "checkbox";
+    cycToggle.checked = state.cycleOn;
+    cycToggle.addEventListener("change", () => {
+      state.cycleOn = cycToggle.checked;
+      Modal.refresh();
+      const again = document.querySelector(".cycle-toggle input");
+      if (again) again.focus();
+    });
+    const cycText = document.createElement("span");
+    cycText.textContent = "Cycle";
+    cycLabel.append(cycToggle, cycText);
+    cycHead.appendChild(cycLabel);
+
+    if (state.cycleOn) {
+      const sched = document.createElement("div");
+      sched.className = "target-wrap";
+
+      const everyInput = document.createElement("input");
+      everyInput.type = "number";
+      everyInput.min = "1";
+      everyInput.step = "1";
+      everyInput.className = "modal-input target-input";
+      everyInput.value = state.cycleEvery;
+      everyInput.setAttribute("aria-label", "Cycle length");
+      everyInput.addEventListener("input", () => {
+        state.cycleEvery = everyInput.value;
+      });
+
+      const unitSel = document.createElement("select");
+      unitSel.className = "modal-input unit-select";
+      unitSel.setAttribute("aria-label", "Cycle unit");
+      const unitNames = { hour: "hours", day: "days", week: "weeks", month: "months" };
+      CYCLE_UNITS.forEach((u) => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.textContent = unitNames[u];
+        unitSel.appendChild(opt);
+      });
+      unitSel.value = state.cycleUnit;
+      unitSel.addEventListener("change", () => {
+        state.cycleUnit = unitSel.value;
+      });
+
+      sched.append(everyInput, unitSel);
+      cycHead.appendChild(sched);
+    }
+
+    cyc.appendChild(cycHead);
+    if (state.cycleOn) {
+      const help = document.createElement("p");
+      help.className = "hint";
+      help.textContent = "When the period ends the task starts over automatically.";
+      cyc.appendChild(help);
+    }
+    block.appendChild(cyc);
 
     // --- Subtasks ---
     const subs = document.createElement("div");
@@ -274,8 +449,8 @@ function openNewTaskModal() {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks } = modesToData(modes);
-      addTask(text, orderedTags(selected), { repeats, subtasks });
+      const { repeats, subtasks, cycle } = modesToData(modes);
+      addTask(text, orderedTags(selected), { repeats, subtasks, cycle });
     },
   });
 }
@@ -353,14 +528,28 @@ function openEditTaskModal(id) {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks } = modesToData(modes, task);
+      const { repeats, subtasks, cycle } = modesToData(modes, task);
+      const prevCycle = task.cycle; // read before overwrite
       task.text = text;
       task.tags = orderedTags(selected);
       task.repeats = repeats;
       task.subtasks = subtasks;
+      task.cycle = cycle;
       // Normalize completion for the (possibly new) mode
       if (repeats) task.done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
+      // Keep dueAt when the schedule is unchanged, recompute otherwise
+      if (task.cycle) {
+        const sameSchedule =
+          prevCycle &&
+          prevCycle.every === task.cycle.every &&
+          prevCycle.unit === task.cycle.unit;
+        task.cycle.dueAt = !task.done
+          ? null
+          : sameSchedule && prevCycle.dueAt != null
+            ? prevCycle.dueAt
+            : nextCycleBoundary(task.cycle);
+      }
       saveTasks();
       render();
     },
@@ -396,6 +585,7 @@ function addTask(text, tags = [], mode = {}) {
     tags,
     repeats: mode.repeats || null,
     subtasks: mode.subtasks || [],
+    cycle: mode.cycle || null,
   });
   saveTasks();
   render();
@@ -421,6 +611,7 @@ function toggleTask(id) {
     task.done = !task.done;
   }
 
+  syncCycleDue(task);
   saveTasks();
   render();
 }
@@ -434,6 +625,7 @@ function toggleSubtask(taskId, subtaskId) {
   sub.done = !sub.done;
   // Main task completes when every subtask is ticked
   task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
+  syncCycleDue(task);
   saveTasks();
   render();
 }
@@ -524,6 +716,13 @@ function renderTaskItem(task) {
     line.appendChild(badge);
   }
 
+  if (task.cycle) {
+    const badge = document.createElement("span");
+    badge.className = "cycle-badge" + (task.done ? " complete" : "");
+    badge.textContent = cycleLabel(task.cycle);
+    line.appendChild(badge);
+  }
+
   const text = document.createElement("span");
   text.className = "task-text";
   text.textContent = task.text;
@@ -589,4 +788,8 @@ function renderTaskItem(task) {
 newTaskBtn.addEventListener("click", openNewTaskModal);
 categoriesBtn.addEventListener("click", openCategoriesModal);
 
+// Reset cycle tasks that came due while the app was closed, then
+// keep checking every minute while the tab stays open
+resetDueCycles();
 render();
+setInterval(resetDueCycles, 60 * 1000);
