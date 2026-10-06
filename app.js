@@ -849,18 +849,18 @@ function toggleSubtask(taskId, subtaskId) {
   const sub = task.subtasks.find((s) => s.id === subtaskId);
   if (!sub) return;
 
-  sub.done = !sub.done;
-
   if (task.repeats) {
-    // Combined task: ticks feed the counter; unticking never
-    // decrements it (re-ticking adds +1 again)
-    if (sub.done) {
-      task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
-    }
+    // Combined task: a click always means "done again" - the
+    // subtask stays checked and the counter grows (capped at
+    // target). It can't be unchecked here; only the main reset
+    // (untick when done) clears it
+    sub.done = true;
+    task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
     // Completion is counter-driven, leftover subtasks don't block it
     task.done = task.repeats.current >= task.repeats.target;
   } else {
-    // Subtask-only: completes when every subtask is ticked
+    // Subtask-only: normal toggle, completes when every subtask is ticked
+    sub.done = !sub.done;
     task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
   }
   syncCycleDue(task);

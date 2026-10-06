@@ -326,3 +326,4 @@ CHANGE LOG
 - 2026-10-06: Ninth goal implemented: global cycleAnchor setting with normalized defaults, anchor-aware day/week/month boundary math, "Cycle reset" settings modal, pending dueAts re-anchored on save.
 - 2026-10-06: Ninth goal reviewed and completed. All tasks done.
 - 2026-10-06: Adjustment (not a goal): ticking the main checkbox of a combined task (counter + subtasks) now completes it immediately and fills the counter to target; subtasks stay untouched, untick still resets everything.
+- 2026-10-06: Adjustment (not a goal): clicking a subtask of a combined task now counts "done again" - it stays checked and the counter grows (+1, capped at target); checked subtasks can't be unchecked anymore, only the main reset clears them. Subtask-only tasks keep the normal check/uncheck toggle.
