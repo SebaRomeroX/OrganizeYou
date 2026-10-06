@@ -32,17 +32,18 @@ PROJECT GUIDANCE
 FIRST GOAL: TO-DO LIST
 ----------------------
 Tasks:
-[ ] 1. Project setup: git init, base file structure (index.html, styles.css, app.js)
-[ ] 2. Static layout: input field, "Add" button, task list
-[ ] 3. Add a task from the input
-[ ] 4. Display tasks in the list
-[ ] 5. Mark a task as done (checkbox / strikethrough)
-[ ] 6. Delete a task
-[ ] 7. Persist tasks in localStorage (load on page start)
-[ ] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
-[ ] 9. Empty-state message when there are no tasks
+[x] 1. Project setup: git init, base file structure (index.html, styles.css, app.js)
+[x] 2. Static layout: input field, "Add" button, task list
+[x] 3. Add a task from the input
+[x] 4. Display tasks in the list
+[x] 5. Mark a task as done (checkbox / strikethrough)
+[x] 6. Delete a task
+[x] 7. Persist tasks in localStorage (load on page start)
+[x] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
+[x] 9. Empty-state message when there are no tasks
 [ ] 10. Final review and commit
 
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
+- 2026-10-06: First goal completed: to-do list implemented (index.html, styles.css, app.js), mobile-first, localStorage persistence.
