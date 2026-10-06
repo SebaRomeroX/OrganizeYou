@@ -61,13 +61,13 @@ Decisions:
 - Categories cannot be reordered yet (creation order).
 
 Tasks:
-[ ] 1. Category CRUD: create/delete, persist in localStorage
-[ ] 2. Task data model: tags field + migration for existing tasks
-[ ] 3. Grouped list: sections per category + Uncategorized, multi-tag repeat
-[ ] 4. Tag picker: + button with inline toggle chips
-[ ] 5. Deleting a category removes it from all tasks
-[ ] 6. Empty states (no categories / no tasks)
-[ ] 7. Mobile-first styling for sections, chips and picker
+[x] 1. Category CRUD: create/delete, persist in localStorage
+[x] 2. Task data model: tags field + migration for existing tasks
+[x] 3. Grouped list: sections per category + Uncategorized, multi-tag repeat
+[x] 4. Tag picker: + button with inline toggle chips
+[x] 5. Deleting a category removes it from all tasks
+[x] 6. Empty states (no categories / no tasks)
+[x] 7. Mobile-first styling for sections, chips and picker
 [ ] 8. Review and commit
 
 CHANGE LOG
@@ -75,4 +75,5 @@ CHANGE LOG
 - 2026-10-06: Project created, roadmap defined.
 - 2026-10-06: First goal completed: to-do list implemented (index.html, styles.css, app.js), mobile-first, localStorage persistence.
 - 2026-10-06: First goal reviewed and committed. All tasks done.
-- 2026-10-06: Second goal defined: categories & tags (grouped list, inline tag picker).
+- 2026-10-06: Second goal defined: categories - 2026-10-06: Second goal defined: categories & tags (grouped list, inline tag picker). tags (grouped list, inline tag picker).
+- 2026-10-06: Second goal implemented: categories CRUD, task tags, grouped list, inline picker.
