@@ -188,6 +188,40 @@ Tasks:
 [x] 4. Edge cases (empty groups, all-done list, subtask/counter tasks)
 [ ] 5. Review and commit
 
+SEVENTH GOAL: COMBINED COUNTER + SUBTASKS
+-----------------------------------------
+Decisions:
+- The repeat-vs-subtasks exclusivity is removed: a task can have
+  repeats (counter) and subtasks at the same time.
+- In a combined task completion is driven by the counter:
+  done = counter >= target, no matter how many subtasks are left.
+- Ticking a subtask increments the counter (+1, capped at target);
+  unticking only unchecks the subtask - the counter never goes
+  down from subtask ticks (this is what allows re-ticking to feed
+  a target higher than the subtask count).
+- Main checkbox in a combined task = standard counter behavior:
+  enabled while active (click adds +1), click on the done task
+  resets counter to 0 and unticks all subtasks.
+- Modal suggestion: adding/removing a subtask sets the target
+  input to the subtask count; a manually typed target sticks
+  until the next subtask add/remove re-syncs it.
+- Single-mode tasks keep today's behavior: subtask-only keeps the
+  disabled main checkbox (complete when all ticked), counter-only
+  unchanged. No migration needed.
+- Resets: untick-done and cycle reset both clear counter AND all
+  subtasks in combined tasks.
+- Task row shows the 2/5 badge and the checklist together (name
+  first, then cycle badge, then counter badge).
+
+Tasks:
+[ ] 1. Remove exclusivity: modesToData returns both, repeat toggle keeps subtasks, Add subtask keeps repeat
+[ ] 2. toggleSubtask: increment counter (capped), combined completion rule, untick does not decrement
+[ ] 3. Main checkbox: click-to-add while active, full reset on untick-done
+[ ] 4. Modal auto-sync: target = subtask count on add/remove, manual edit wins
+[ ] 5. Reset paths: untick-done and cycle reset clear counter + subtasks
+[ ] 6. Edge cases (target clamping, badge + checklist together, single-mode unchanged)
+[ ] 7. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -213,3 +247,4 @@ CHANGE LOG
 - 2026-10-06: Fifth goal reviewed and completed. All tasks done.
 - 2026-10-06: Sixth goal defined: display order - pending tasks first, done tasks at the bottom (display-only sort).
 - 2026-10-06: Sixth goal implemented: renderTasks sorts a stable pending-first copy, groups filter from it.
+- 2026-10-06: Seventh goal defined: combined counter + subtasks - counter drives completion, subtask ticks feed it, exclusivity removed.
