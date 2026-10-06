@@ -248,7 +248,7 @@ Tasks:
 [x] 3. Verify callers: syncCycleDue, edit-submit recompute, migration fallback, resetDueCycles
 [x] 4. Edge cases (crossing midnight, DST true elapsed, old stored dueAts still fire)
 [x] 5. Update the Node test harness hour cases (10:30 + 2h -> 12:30, 23:30 + 2h -> 01:30, +1h, +24h)
-[ ] 6. Review and commit
+[x] 6. Review and commit
 
 CHANGE LOG
 ----------
@@ -281,3 +281,4 @@ CHANGE LOG
 - 2026-10-06: Seventh goal reviewed and completed. All tasks done.
 - 2026-10-06: Eighth goal defined: cycle timing - hours elapsed from completion, day/week/month stay calendar-aligned (amends goal 5).
 - 2026-10-06: Eighth goal implemented: hour cycles due at completion + N hours (true elapsed ms), day/week/month boundaries untouched.
+- 2026-10-06: Eighth goal reviewed and completed. All tasks done.
