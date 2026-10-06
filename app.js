@@ -3,19 +3,15 @@
 const TASKS_KEY = "organizeyou.tasks";
 const CATEGORIES_KEY = "organizeyou.categories";
 
-const categoryForm = document.getElementById("category-form");
-const categoryInput = document.getElementById("category-input");
+const newTaskBtn = document.getElementById("new-task-btn");
+const newCategoryBtn = document.getElementById("new-category-btn");
 const categoryList = document.getElementById("category-list");
 const noCategoriesHint = document.getElementById("no-categories");
-
-const taskForm = document.getElementById("task-form");
-const taskInput = document.getElementById("task-input");
 const taskList = document.getElementById("task-list");
 const emptyState = document.getElementById("empty-state");
 
 let tasks = loadTasks();
 let categories = loadCategories();
-let openPickerId = null; // task id whose inline tag picker is open
 
 function loadTasks() {
   try {
@@ -53,6 +49,71 @@ function makeId() {
 
 function categoryById(id) {
   return categories.find((c) => c.id === id);
+}
+
+/* ---------- Modal actions ---------- */
+
+function openNewTaskModal() {
+  Modal.open({
+    title: "New task",
+    fields: [{ name: "text", label: "Task", placeholder: "What needs to be done?" }],
+    submitLabel: "Add",
+    onSubmit: ({ text }) => addTask(text),
+  });
+}
+
+function openNewCategoryModal() {
+  Modal.open({
+    title: "New category",
+    fields: [{ name: "name", label: "Category name", placeholder: "e.g. Work" }],
+    submitLabel: "Add",
+    onSubmit: ({ name }) => addCategory(name),
+  });
+}
+
+function openEditTaskModal(id) {
+  const task = tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  // Selected tags as a Set for easy toggling while the modal is open
+  const selected = new Set(task.tags.filter((tagId) => categoryById(tagId)));
+
+  Modal.open({
+    title: "Edit task",
+    fields: [{ name: "text", label: "Task", value: task.text }],
+    submitLabel: "Save",
+    extra: (container) => {
+      if (categories.length === 0) {
+        const hint = document.createElement("span");
+        hint.className = "picker-empty";
+        hint.textContent = "No categories yet. Create one first.";
+        container.appendChild(hint);
+        return;
+      }
+      categories.forEach((cat) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        const isOn = selected.has(cat.id);
+        chip.className = "picker-chip" + (isOn ? " selected" : "");
+        chip.textContent = cat.name;
+        chip.setAttribute("aria-pressed", isOn ? "true" : "false");
+        chip.addEventListener("click", () => {
+          if (selected.has(cat.id)) selected.delete(cat.id);
+          else selected.add(cat.id);
+          const nowOn = selected.has(cat.id);
+          chip.classList.toggle("selected", nowOn);
+          chip.setAttribute("aria-pressed", nowOn ? "true" : "false");
+        });
+        container.appendChild(chip);
+      });
+    },
+    onSubmit: ({ text }) => {
+      task.text = text;
+      task.tags = categories.map((c) => c.id).filter((id) => selected.has(id));
+      saveTasks();
+      render();
+    },
+  });
 }
 
 /* ---------- Categories ---------- */
@@ -93,19 +154,6 @@ function toggleTask(id) {
 
 function deleteTask(id) {
   tasks = tasks.filter((t) => t.id !== id);
-  if (openPickerId === id) openPickerId = null;
-  saveTasks();
-  render();
-}
-
-function toggleTag(taskId, categoryId) {
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) return;
-  if (task.tags.includes(categoryId)) {
-    task.tags = task.tags.filter((tagId) => tagId !== categoryId);
-  } else {
-    task.tags.push(categoryId);
-  }
   saveTasks();
   render();
 }
@@ -170,15 +218,7 @@ function renderTasks() {
 
     const ul = document.createElement("ul");
     ul.className = "group-tasks";
-
-    group.tasks.forEach((task) => {
-      ul.appendChild(renderTaskItem(task));
-      if (openPickerId === task.id) {
-        const li = document.createElement("li");
-        li.appendChild(renderTagPicker(task));
-        ul.appendChild(li);
-      }
-    });
+    group.tasks.forEach((task) => ul.appendChild(renderTaskItem(task)));
 
     section.append(title, ul);
     taskList.appendChild(section);
@@ -205,7 +245,6 @@ function renderTaskItem(task) {
   text.textContent = task.text;
   main.appendChild(text);
 
-  // Show only tags that still exist (safety while rendering)
   const tags = task.tags.map(categoryById).filter(Boolean);
   if (tags.length > 0) {
     const tagRow = document.createElement("div");
@@ -219,16 +258,13 @@ function renderTaskItem(task) {
     main.appendChild(tagRow);
   }
 
-  const tagBtn = document.createElement("button");
-  tagBtn.type = "button";
-  tagBtn.className = "icon-btn tag-btn";
-  tagBtn.textContent = "+";
-  tagBtn.setAttribute("aria-label", "Edit tags");
-  tagBtn.title = "Edit tags";
-  tagBtn.addEventListener("click", () => {
-    openPickerId = openPickerId === task.id ? null : task.id;
-    render();
-  });
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "icon-btn edit-btn";
+  editBtn.textContent = "✎";
+  editBtn.setAttribute("aria-label", "Edit task");
+  editBtn.title = "Edit task";
+  editBtn.addEventListener("click", () => openEditTaskModal(task.id));
 
   const del = document.createElement("button");
   del.type = "button";
@@ -237,55 +273,13 @@ function renderTaskItem(task) {
   del.setAttribute("aria-label", "Delete task");
   del.addEventListener("click", () => deleteTask(task.id));
 
-  li.append(checkbox, main, tagBtn, del);
+  li.append(checkbox, main, editBtn, del);
   return li;
-}
-
-function renderTagPicker(task) {
-  const picker = document.createElement("div");
-  picker.className = "tag-picker";
-  picker.setAttribute("role", "group");
-  picker.setAttribute("aria-label", "Select categories");
-
-  if (categories.length === 0) {
-    const hint = document.createElement("span");
-    hint.className = "picker-empty";
-    hint.textContent = "No categories yet. Create one first.";
-    picker.appendChild(hint);
-    return picker;
-  }
-
-  categories.forEach((cat) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "picker-chip" + (task.tags.includes(cat.id) ? " selected" : "");
-    chip.textContent = cat.name;
-    chip.setAttribute("aria-pressed", task.tags.includes(cat.id) ? "true" : "false");
-    chip.addEventListener("click", () => toggleTag(task.id, cat.id));
-    picker.appendChild(chip);
-  });
-
-  return picker;
 }
 
 /* ---------- Events ---------- */
 
-categoryForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = categoryInput.value.trim();
-  if (!name) return;
-  addCategory(name);
-  categoryInput.value = "";
-  categoryInput.focus();
-});
-
-taskForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const text = taskInput.value.trim();
-  if (!text) return;
-  addTask(text);
-  taskInput.value = "";
-  taskInput.focus();
-});
+newTaskBtn.addEventListener("click", openNewTaskModal);
+newCategoryBtn.addEventListener("click", openNewCategoryModal);
 
 render();

@@ -89,13 +89,13 @@ Decisions:
 - Mobile: bottom sheet style; min-width 600px: centered dialog.
 
 Tasks:
-[ ] 1. Modal component: markup, open/close (X, backdrop, Escape), focus handling
-[ ] 2. Modal styles: mobile sheet -> centered dialog, dark theme
-[ ] 3. "New task" button -> modal creates task
-[ ] 4. "New category" button -> modal creates category
-[ ] 5. Edit task: pencil button -> modal renames task + toggles tags
-[ ] 6. Remove inline forms and inline tag picker
-[ ] 7. Empty states and edge cases (empty text rejected, Escape does not save)
+[x] 1. Modal component: markup, open/close (X, backdrop, Escape), focus handling
+[x] 2. Modal styles: mobile sheet -> centered dialog, dark theme
+[x] 3. "New task" button -> modal creates task
+[x] 4. "New category" button -> modal creates category
+[x] 5. Edit task: pencil button -> modal renames task + toggles tags
+[x] 6. Remove inline forms and inline tag picker
+[x] 7. Empty states and edge cases (empty text rejected, Escape does not save)
 [ ] 8. Review and commit
 
 CHANGE LOG
@@ -110,3 +110,4 @@ CHANGE LOG
 - 2026-10-06: Layout reordered: task input, categories, task list; Uncategorized group moved last.
 - 2026-10-06: Contrast fixes: input/placeholder text colors, color-scheme dark, autofill override, done color lightened.
 - 2026-10-06: Third goal defined: reusable modal (new task, new category, edit task with tags).
+- 2026-10-06: Third goal implemented: modal.js component, action buttons, edit task modal with tag chips; inline forms and picker removed.
