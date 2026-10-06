@@ -51,12 +51,49 @@ function categoryById(id) {
 
 /* ---------- Modal actions ---------- */
 
+// Shared tag toggle chips for the new/edit task modals.
+// Mutates `selected` (a Set of category ids) in place.
+function buildTagChips(selected) {
+  return (container) => {
+    if (categories.length === 0) {
+      const hint = document.createElement("span");
+      hint.className = "picker-empty";
+      hint.textContent = "No categories yet. Create one first.";
+      container.appendChild(hint);
+      return;
+    }
+    categories.forEach((cat) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      const isOn = selected.has(cat.id);
+      chip.className = "picker-chip" + (isOn ? " selected" : "");
+      chip.textContent = cat.name;
+      chip.setAttribute("aria-pressed", isOn ? "true" : "false");
+      chip.addEventListener("click", () => {
+        if (selected.has(cat.id)) selected.delete(cat.id);
+        else selected.add(cat.id);
+        const nowOn = selected.has(cat.id);
+        chip.classList.toggle("selected", nowOn);
+        chip.setAttribute("aria-pressed", nowOn ? "true" : "false");
+      });
+      container.appendChild(chip);
+    });
+  };
+}
+
+// Selected tags in category creation order
+function orderedTags(selected) {
+  return categories.map((c) => c.id).filter((id) => selected.has(id));
+}
+
 function openNewTaskModal() {
+  const selected = new Set(); // no tags pre-selected
   Modal.open({
     title: "New task",
     fields: [{ name: "text", label: "Task", placeholder: "What needs to be done?" }],
     submitLabel: "Add",
-    onSubmit: ({ text }) => addTask(text),
+    extra: buildTagChips(selected),
+    onSubmit: ({ text }) => addTask(text, orderedTags(selected)),
   });
 }
 
@@ -127,34 +164,10 @@ function openEditTaskModal(id) {
     title: "Edit task",
     fields: [{ name: "text", label: "Task", value: task.text }],
     submitLabel: "Save",
-    extra: (container) => {
-      if (categories.length === 0) {
-        const hint = document.createElement("span");
-        hint.className = "picker-empty";
-        hint.textContent = "No categories yet. Create one first.";
-        container.appendChild(hint);
-        return;
-      }
-      categories.forEach((cat) => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        const isOn = selected.has(cat.id);
-        chip.className = "picker-chip" + (isOn ? " selected" : "");
-        chip.textContent = cat.name;
-        chip.setAttribute("aria-pressed", isOn ? "true" : "false");
-        chip.addEventListener("click", () => {
-          if (selected.has(cat.id)) selected.delete(cat.id);
-          else selected.add(cat.id);
-          const nowOn = selected.has(cat.id);
-          chip.classList.toggle("selected", nowOn);
-          chip.setAttribute("aria-pressed", nowOn ? "true" : "false");
-        });
-        container.appendChild(chip);
-      });
-    },
+    extra: buildTagChips(selected),
     onSubmit: ({ text }) => {
       task.text = text;
-      task.tags = categories.map((c) => c.id).filter((id) => selected.has(id));
+      task.tags = orderedTags(selected);
       saveTasks();
       render();
     },
@@ -182,8 +195,8 @@ function deleteCategory(id) {
 
 /* ---------- Tasks ---------- */
 
-function addTask(text) {
-  tasks.push({ id: makeId(), text, done: false, tags: [] });
+function addTask(text, tags = []) {
+  tasks.push({ id: makeId(), text, done: false, tags });
   saveTasks();
   render();
 }
