@@ -41,9 +41,10 @@ Tasks:
 [x] 7. Persist tasks in localStorage (load on page start)
 [x] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
 [x] 9. Empty-state message when there are no tasks
-[ ] 10. Final review and commit
+[x] 10. Final review and commit
 
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
 - 2026-10-06: First goal completed: to-do list implemented (index.html, styles.css, app.js), mobile-first, localStorage persistence.
+- 2026-10-06: First goal reviewed and committed. All tasks done.
