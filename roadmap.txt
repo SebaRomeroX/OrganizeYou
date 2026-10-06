@@ -68,7 +68,7 @@ Tasks:
 [x] 5. Deleting a category removes it from all tasks
 [x] 6. Empty states (no categories / no tasks)
 [x] 7. Mobile-first styling for sections, chips and picker
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 CHANGE LOG
 ----------
@@ -77,3 +77,4 @@ CHANGE LOG
 - 2026-10-06: First goal reviewed and committed. All tasks done.
 - 2026-10-06: Second goal defined: categories - 2026-10-06: Second goal defined: categories & tags (grouped list, inline tag picker). tags (grouped list, inline tag picker).
 - 2026-10-06: Second goal implemented: categories CRUD, task tags, grouped list, inline picker.
+- 2026-10-06: Second goal reviewed and committed. All tasks done.
