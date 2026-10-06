@@ -458,6 +458,25 @@ h2 {
   opacity: 1; /* Safari dims placeholders by default */
 }
 
+/* Global cycle anchor controls (settings modal) */
+.anchor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.anchor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.anchor-field select {
+  cursor: pointer;
+}
+
 /* Keep autofill in the dark theme */
 .modal-input:-webkit-autofill {
   -webkit-text-fill-color: var(--color-text);

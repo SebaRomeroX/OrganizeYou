@@ -2,10 +2,16 @@
 
 const TASKS_KEY = "organizeyou.tasks";
 const CATEGORIES_KEY = "organizeyou.categories";
+const CYCLE_ANCHOR_KEY = "organizeyou.cycleAnchor";
 const CYCLE_UNITS = ["hour", "day", "week", "month"];
+
+// Global anchor for calendar cycles - must be ready before
+// loadTasks() (its migration calls nextCycleBoundary)
+const cycleAnchor = loadCycleAnchor();
 
 const newTaskBtn = document.getElementById("new-task-btn");
 const categoriesBtn = document.getElementById("categories-btn");
+const settingsBtn = document.getElementById("settings-btn");
 const taskList = document.getElementById("task-list");
 const emptyState = document.getElementById("empty-state");
 
@@ -128,11 +134,37 @@ function orderedTags(selected) {
 
 /* ---------- Cycles (recurring schedules) ---------- */
 
+// Anchor time as minutes since midnight (invalid values -> 0)
+function anchorMinutes() {
+  const m = /^([01][0-9]|2[0-3]):([0-5][0-9])$/.exec(cycleAnchor.time);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
+}
+
+// Local wall-clock instant of calendar day number `num` at
+// `minutes` past midnight
+function dayNumInstant(num, minutes) {
+  const d = new Date(num * 86400000);
+  return new Date(
+    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+    Math.floor(minutes / 60), minutes % 60
+  ).getTime();
+}
+
+// Local wall-clock instant of month index `mIdx` (months since
+// 1970-01) on day `day` at `minutes` past midnight
+function monthInstant(mIdx, day, minutes) {
+  const yr = 1970 + Math.floor(mIdx / 12);
+  const mo = ((mIdx % 12) + 12) % 12;
+  return new Date(yr, mo, day, Math.floor(minutes / 60), minutes % 60).getTime();
+}
+
 // Next due moment strictly after `from` (defaults to now).
 // Hours are elapsed: `from` + N hours exactly (true duration in
-// ms, so it holds even across DST). Day/week/month are
-// calendar-aligned: next local midnight, next Monday, next 1st;
-// for every N > 1 the periods anchor to the epoch (see roadmap).
+// ms, so it holds even across DST). Day/week/month boundaries
+// start at the global cycle anchor (start time, week start day,
+// month start day, month anchor); with the defaults they fall on
+// midnight/Monday/1st exactly as before. For every N > 1 the
+// periods phase to the epoch (see roadmap).
 function nextCycleBoundary(cycle, from = new Date()) {
   const n = Math.max(1, Math.floor(Number(cycle.every)) || 1);
   const y = from.getFullYear();
@@ -144,24 +176,36 @@ function nextCycleBoundary(cycle, from = new Date()) {
     return from.getTime() + n * 3600000;
   }
 
-  // Calendar day number (DST-proof), local midnight conversion below
+  const minutes = anchorMinutes();
+  const fromTs = from.getTime();
+
+  // Calendar day number (DST-proof) of the local date
   const dayNum = Math.floor(Date.UTC(y, mo, d) / 86400000);
-  let next;
+
   if (cycle.unit === "day") {
-    next = (Math.floor(dayNum / n) + 1) * n;
-  } else if (cycle.unit === "week") {
-    const MONDAY = 4; // day number of 1970-01-05, a Monday
-    next = (Math.floor((dayNum - MONDAY) / (7 * n)) + 1) * 7 * n + MONDAY;
-  } else {
-    // month: months since 1970-01 (epoch anchor, see roadmap)
-    const mIdx = (y - 1970) * 12 + mo;
-    next = (Math.floor(mIdx / n) + 1) * n;
-    const yr = 1970 + Math.floor(next / 12);
-    const mo2 = ((next % 12) + 12) % 12;
-    return new Date(yr, mo2, 1).getTime();
+    // Boundaries: epoch dayNum = 0 (mod n), at the anchor time.
+    // Ceil gives the first boundary on or after today's date.
+    const b = Math.ceil(dayNum / n) * n;
+    const start = dayNumInstant(b, minutes);
+    return start > fromTs ? start : dayNumInstant(b + n, minutes);
   }
-  const nd = new Date(next * 86400000);
-  return new Date(nd.getUTCFullYear(), nd.getUTCMonth(), nd.getUTCDate()).getTime();
+
+  if (cycle.unit === "week") {
+    // N-week periods starting on the configured weekday
+    const firstW = (cycleAnchor.weekStartDay + 3) % 7; // first such weekday after epoch
+    const span = 7 * n;
+    const p = firstW + Math.floor((dayNum - firstW) / span) * span;
+    const start = dayNumInstant(p, minutes);
+    return start > fromTs ? start : dayNumInstant(p + span, minutes);
+  }
+
+  // month: N-month periods starting at the configured anchor month,
+  // on the configured start day (1-28) at the anchor time
+  const mIdx = (y - 1970) * 12 + mo;
+  const a0 = cycleAnchor.monthAnchor;
+  const p = a0 + Math.floor((mIdx - a0) / n) * n;
+  const start = monthInstant(p, cycleAnchor.monthStartDay, minutes);
+  return start > fromTs ? start : monthInstant(p + n, cycleAnchor.monthStartDay, minutes);
 }
 
 // Badge text: "Every day", "Every 2h", "Every 3 weeks"...
@@ -199,6 +243,175 @@ function resetDueCycles() {
     render();
   }
   return changed;
+}
+
+/* ---------- Settings: global cycle anchor ---------- */
+
+const WEEKDAY_NAMES = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Defaults reproduce the original boundaries exactly:
+// midnight, Monday, the 1st, January (epoch phase for N > 1)
+function defaultCycleAnchor() {
+  return { time: "00:00", weekStartDay: 1, monthStartDay: 1, monthAnchor: 0 };
+}
+
+// Fill in anything missing or invalid so first run and corrupt
+// data behave exactly like the default calendar boundaries
+function normalizeCycleAnchor(a) {
+  const base = defaultCycleAnchor();
+  if (!a || typeof a !== "object") return base;
+  return {
+    time:
+      typeof a.time === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(a.time)
+        ? a.time
+        : base.time,
+    weekStartDay:
+      Number.isInteger(a.weekStartDay) && a.weekStartDay >= 0 && a.weekStartDay <= 6
+        ? a.weekStartDay
+        : base.weekStartDay,
+    monthStartDay:
+      Number.isInteger(a.monthStartDay) && a.monthStartDay >= 1 && a.monthStartDay <= 28
+        ? a.monthStartDay
+        : base.monthStartDay,
+    monthAnchor:
+      Number.isInteger(a.monthAnchor) && a.monthAnchor >= 0 && a.monthAnchor <= 11
+        ? a.monthAnchor
+        : base.monthAnchor,
+  };
+}
+
+function loadCycleAnchor() {
+  try {
+    const raw = localStorage.getItem(CYCLE_ANCHOR_KEY);
+    return normalizeCycleAnchor(raw ? JSON.parse(raw) : null);
+  } catch {
+    return defaultCycleAnchor();
+  }
+}
+
+function saveCycleAnchor() {
+  localStorage.setItem(CYCLE_ANCHOR_KEY, JSON.stringify(cycleAnchor));
+}
+
+// Three selects/number controls for the settings modal; they
+// mutate `draft`, which is committed on submit
+function buildAnchorControls(draft) {
+  return (container) => {
+    const wrap = document.createElement("div");
+    wrap.className = "anchor-controls";
+
+    // A labeled control styled like a modal field
+    const field = (labelText) => {
+      const label = document.createElement("label");
+      label.className = "anchor-field";
+      const text = document.createElement("span");
+      text.textContent = labelText;
+      label.appendChild(text);
+      wrap.appendChild(label);
+      return label;
+    };
+
+    // Which day starts a week
+    const weekHost = field("Which day starts a week?");
+    const weekSel = document.createElement("select");
+    weekSel.className = "modal-input";
+    weekSel.setAttribute("aria-label", "Week start day");
+    WEEKDAY_NAMES.forEach((name, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = name;
+      weekSel.appendChild(opt);
+    });
+    weekSel.value = String(draft.weekStartDay);
+    weekSel.addEventListener("change", () => {
+      draft.weekStartDay = Number(weekSel.value);
+    });
+    weekHost.appendChild(weekSel);
+
+    // Which day starts a month (1-28 so it exists in every month)
+    const dayHost = field("Which day starts a month?");
+    const dayInput = document.createElement("input");
+    dayInput.type = "number";
+    dayInput.min = "1";
+    dayInput.max = "28";
+    dayInput.step = "1";
+    dayInput.className = "modal-input";
+    dayInput.value = draft.monthStartDay;
+    dayInput.setAttribute("aria-label", "Month start day");
+    dayInput.addEventListener("input", () => {
+      const v = Math.floor(Number(dayInput.value));
+      if (v >= 1 && v <= 28) draft.monthStartDay = v;
+    });
+    dayHost.appendChild(dayInput);
+
+    // Which month starts the period (matters for every N months)
+    const anchorHost = field("Which month starts the period?");
+    const monthSel = document.createElement("select");
+    monthSel.className = "modal-input";
+    monthSel.setAttribute("aria-label", "Period start month");
+    MONTH_NAMES.forEach((name, i) => {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = name;
+      monthSel.appendChild(opt);
+    });
+    monthSel.value = String(draft.monthAnchor);
+    monthSel.addEventListener("change", () => {
+      draft.monthAnchor = Number(monthSel.value);
+    });
+    anchorHost.appendChild(monthSel);
+
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent =
+      "Applies to every day, week and month cycle. Hour cycles always restart N hours after you complete them.";
+    wrap.appendChild(hint);
+
+    container.appendChild(wrap);
+  };
+}
+
+function openSettingsModal() {
+  const draft = { ...cycleAnchor };
+  Modal.open({
+    title: "Cycle reset",
+    // The message asking what time the cycle starts is this field's label
+    fields: [
+      { name: "time", label: "What time does the cycle start?", type: "time", value: draft.time },
+    ],
+    submitLabel: "Save",
+    extra: buildAnchorControls(draft),
+    onSubmit: ({ time }) => {
+      draft.time = time;
+      Object.assign(cycleAnchor, normalizeCycleAnchor(draft));
+      saveCycleAnchor();
+      applyCycleAnchor();
+    },
+  });
+}
+
+// Re-anchor pending cycle resets after the global setting changed;
+// runs the reset check right away so an anchor that already passed
+// fires immediately
+function applyCycleAnchor() {
+  let changed = false;
+  tasks.forEach((t) => {
+    if (t.cycle && t.done && t.cycle.unit !== "hour") {
+      const due = nextCycleBoundary(t.cycle);
+      if (t.cycle.dueAt !== due) {
+        t.cycle.dueAt = due;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveTasks();
+  resetDueCycles();
 }
 
 /* ---------- Repeat / subtask / cycle modes (combinable) ---------- */
@@ -813,6 +1026,7 @@ function renderTaskItem(task) {
 
 newTaskBtn.addEventListener("click", openNewTaskModal);
 categoriesBtn.addEventListener("click", openCategoriesModal);
+settingsBtn.addEventListener("click", openSettingsModal);
 
 // Reset cycle tasks that came due while the app was closed, then
 // keep checking every minute while the tab stays open

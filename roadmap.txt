@@ -282,12 +282,12 @@ Decisions:
   month.
 
 Tasks:
-[ ] 1. Setting: load/normalize/save cycleAnchor with defaults
-[ ] 2. nextCycleBoundary: anchor-aware day/week/month (hour untouched)
-[ ] 3. Settings modal + header button + four labeled controls
-[ ] 4. Save: recompute pending dueAts + immediate reset check
-[ ] 5. Edge cases (strictly-after at exact anchor, 1-28 cap, DST time, invalid settings)
-[ ] 6. Regression: goal-8 harness passes with defaults + new anchor cases
+[x] 1. Setting: load/normalize/save cycleAnchor with defaults
+[x] 2. nextCycleBoundary: anchor-aware day/week/month (hour untouched)
+[x] 3. Settings modal + header button + four labeled controls
+[x] 4. Save: recompute pending dueAts + immediate reset check
+[x] 5. Edge cases (strictly-after at exact anchor, 1-28 cap, DST time, invalid settings)
+[x] 6. Regression: goal-8 harness passes with defaults + new anchor cases
 [ ] 7. Review and commit
 
 CHANGE LOG
@@ -323,3 +323,4 @@ CHANGE LOG
 - 2026-10-06: Eighth goal implemented: hour cycles due at completion + N hours (true elapsed ms), day/week/month boundaries untouched.
 - 2026-10-06: Eighth goal reviewed and completed. All tasks done.
 - 2026-10-06: Ninth goal defined: cycle reset anchor - global setting for time/week start/month start/month anchor of calendar cycles.
+- 2026-10-06: Ninth goal implemented: global cycleAnchor setting with normalized defaults, anchor-aware day/week/month boundary math, "Cycle reset" settings modal, pending dueAts re-anchored on save.
