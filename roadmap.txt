@@ -130,7 +130,7 @@ Tasks:
 [x] 5. Modal: repeat toggle + target input (new & edit)
 [x] 6. Modal: dynamic subtask rows (add/remove, min 1) with mode exclusivity
 [x] 7. Edge cases (clamping, empty subtasks, migration)
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 FIFTH GOAL: CYCLES (RECURRING TASKS)
 ------------------------------------
@@ -164,7 +164,7 @@ Tasks:
 [x] 5. Modal: cycle toggle + every/unit controls (new & edit)
 [x] 6. Task row: cycle badge
 [x] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
-[x] 8. Review and commit
+[ ] 8. Review and commit
 
 CHANGE LOG
 ----------
