@@ -11,11 +11,21 @@ const Modal = (() => {
   const submitBtn = document.getElementById("modal-submit");
 
   let onSubmit = null;
+  let onExtra = null;
+  let keepOpen = false;
   let lastFocused = null;
 
-  function open({ title, fields = [], extra, submitLabel = "Save", onSubmit: submit }) {
+  function renderExtra() {
+    extraEl.innerHTML = "";
+    if (typeof onExtra === "function") onExtra(extraEl);
+    extraEl.hidden = extraEl.children.length === 0;
+  }
+
+  function open({ title, fields = [], extra, submitLabel = "Save", onSubmit: submit, keepOpen: keep = false }) {
     lastFocused = document.activeElement;
     onSubmit = submit;
+    onExtra = extra;
+    keepOpen = keep;
 
     titleEl.textContent = title;
     submitBtn.textContent = submitLabel;
@@ -44,10 +54,7 @@ const Modal = (() => {
       fieldsEl.appendChild(wrap);
     });
 
-    // Custom content (e.g. tag chips)
-    extraEl.innerHTML = "";
-    if (typeof extra === "function") extra(extraEl);
-    extraEl.hidden = extraEl.children.length === 0;
+    renderExtra();
 
     backdrop.classList.add("open");
     backdrop.setAttribute("aria-hidden", "false");
@@ -59,12 +66,19 @@ const Modal = (() => {
     if (first.select) first.select();
   }
 
+  // Re-run the extra content builder (e.g. refresh chips after add/delete)
+  function refresh() {
+    if (backdrop.classList.contains("open")) renderExtra();
+  }
+
   function close() {
     if (!backdrop.classList.contains("open")) return;
     backdrop.classList.remove("open");
     backdrop.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
     onSubmit = null;
+    onExtra = null;
+    keepOpen = false;
     extraEl.innerHTML = "";
     if (lastFocused && lastFocused.focus) lastFocused.focus();
     lastFocused = null;
@@ -98,9 +112,9 @@ const Modal = (() => {
     const hasEmpty = Object.values(data).some((v) => v === "");
     if (hasEmpty) return; // required validation also catches this
     const cb = onSubmit;
-    close();
+    if (!keepOpen) close();
     if (cb) cb(data);
   });
 
-  return { open, close };
+  return { open, close, refresh };
 })();

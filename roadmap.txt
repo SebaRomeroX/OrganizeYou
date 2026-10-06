@@ -84,6 +84,10 @@ Decisions:
 - The inline tag picker is removed: the edit modal contains both
   the task text and tag toggle chips (single place to edit a task).
 - Each task row shows an edit (pencil) button to open the modal.
+- The categories manager (chips + add field) lives inside the
+  categories modal, opened from the "Categories" button; the page
+  shows no category list. The modal stays open while adding or
+  deleting categories, refreshing the chips in place.
 - Modal closes via X, backdrop click or Escape; focus moves to the
   field on open; empty text is rejected by required validation.
 - Mobile: bottom sheet style; min-width 600px: centered dialog.
@@ -111,3 +115,4 @@ CHANGE LOG
 - 2026-10-06: Contrast fixes: input/placeholder text colors, color-scheme dark, autofill override, done color lightened.
 - 2026-10-06: Third goal defined: reusable modal (new task, new category, edit task with tags).
 - 2026-10-06: Third goal implemented: modal.js component, action buttons, edit task modal with tag chips; inline forms and picker removed.
+- 2026-10-06: Categories list moved inside the categories modal (button "Categories"); modal stays open on add/delete.

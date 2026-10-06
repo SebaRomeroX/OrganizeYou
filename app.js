@@ -4,9 +4,7 @@ const TASKS_KEY = "organizeyou.tasks";
 const CATEGORIES_KEY = "organizeyou.categories";
 
 const newTaskBtn = document.getElementById("new-task-btn");
-const newCategoryBtn = document.getElementById("new-category-btn");
-const categoryList = document.getElementById("category-list");
-const noCategoriesHint = document.getElementById("no-categories");
+const categoriesBtn = document.getElementById("categories-btn");
 const taskList = document.getElementById("task-list");
 const emptyState = document.getElementById("empty-state");
 
@@ -62,13 +60,60 @@ function openNewTaskModal() {
   });
 }
 
-function openNewCategoryModal() {
+function openCategoriesModal() {
   Modal.open({
-    title: "New category",
+    title: "Categories",
     fields: [{ name: "name", label: "Category name", placeholder: "e.g. Work" }],
     submitLabel: "Add",
-    onSubmit: ({ name }) => addCategory(name),
+    keepOpen: true, // stay open so chips update in place
+    extra: renderCategoryChips,
+    onSubmit: ({ name }) => {
+      addCategory(name);
+      Modal.refresh();
+      // Clear and refocus the field for the next entry
+      const input = document.getElementById("modal-field-name");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+    },
   });
+}
+
+// Chips + empty hint rendered inside the categories modal
+function renderCategoryChips(container) {
+  if (categories.length === 0) {
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "No categories yet. Add one above.";
+    container.appendChild(hint);
+    return;
+  }
+
+  const list = document.createElement("div");
+  list.className = "category-list";
+  categories.forEach((cat) => {
+    const chip = document.createElement("span");
+    chip.className = "category-chip";
+
+    const name = document.createElement("span");
+    name.className = "chip-name";
+    name.textContent = cat.name;
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "chip-delete";
+    del.textContent = "×";
+    del.setAttribute("aria-label", `Delete category ${cat.name}`);
+    del.addEventListener("click", () => {
+      deleteCategory(cat.id);
+      Modal.refresh();
+    });
+
+    chip.append(name, del);
+    list.appendChild(chip);
+  });
+  container.appendChild(list);
 }
 
 function openEditTaskModal(id) {
@@ -161,31 +206,7 @@ function deleteTask(id) {
 /* ---------- Rendering ---------- */
 
 function render() {
-  renderCategories();
   renderTasks();
-}
-
-function renderCategories() {
-  categoryList.innerHTML = "";
-  categories.forEach((cat) => {
-    const chip = document.createElement("span");
-    chip.className = "category-chip";
-
-    const name = document.createElement("span");
-    name.className = "chip-name";
-    name.textContent = cat.name;
-
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "chip-delete";
-    del.textContent = "×";
-    del.setAttribute("aria-label", `Delete category ${cat.name}`);
-    del.addEventListener("click", () => deleteCategory(cat.id));
-
-    chip.append(name, del);
-    categoryList.appendChild(chip);
-  });
-  noCategoriesHint.classList.toggle("hidden", categories.length > 0);
 }
 
 function renderTasks() {
@@ -280,6 +301,6 @@ function renderTaskItem(task) {
 /* ---------- Events ---------- */
 
 newTaskBtn.addEventListener("click", openNewTaskModal);
-newCategoryBtn.addEventListener("click", openNewCategoryModal);
+categoriesBtn.addEventListener("click", openCategoriesModal);
 
 render();
