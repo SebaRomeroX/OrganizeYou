@@ -326,7 +326,7 @@ Tasks:
 [x] 5. 60s tick: re-patch badges without full re-render
 [x] 6. Edge cases (date-only today, exact boundaries, past/invalid input, done hides badge)
 [x] 7. Regression: goal 7/8/9 harnesses + new countdown harness
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 CHANGE LOG
 ----------
@@ -365,5 +365,6 @@ CHANGE LOG
 - 2026-10-06: Ninth goal reviewed and completed. All tasks done.
 - 2026-10-06: Tenth goal defined: deadline countdown - date-only deadlines count to end of day ("today"), timed deadlines count days then hours then 10-minute steps.
 - 2026-10-06: Tenth goal implemented: task.deadline data with migration, countdownInfo() for both deadline modes, Deadline block in the task modal (date + optional time), countdown badge with 60s in-place refresh (normal/urgent/overdue states).
+- 2026-10-06: Tenth goal reviewed and completed. All tasks done.
 - 2026-10-06: Adjustment (not a goal): ticking the main checkbox of a combined task (counter + subtasks) now completes it immediately and fills the counter to target; subtasks stay untouched, untick still resets everything.
 - 2026-10-06: Adjustment (not a goal): clicking a subtask of a combined task now counts "done again" - it stays checked and the counter grows (+1, capped at target); checked subtasks can't be unchecked anymore, only the main reset clears them. Subtask-only tasks keep the normal check/uncheck toggle.
