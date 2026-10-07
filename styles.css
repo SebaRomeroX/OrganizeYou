@@ -286,6 +286,17 @@ h2 {
   border-color: var(--color-primary);
 }
 
+.since-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  background: var(--color-chip-bg);
+  border: 1px dotted var(--color-border);
+  border-radius: 999px;
+}
+
 .task-item input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -628,6 +639,23 @@ h2 {
 
 .add-row-btn:hover,
 .add-row-btn:focus {
+  border-color: var(--color-primary);
+  background: var(--color-hover-primary);
+}
+
+.now-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.now-btn:hover,
+.now-btn:focus {
   border-color: var(--color-primary);
   background: var(--color-hover-primary);
 }

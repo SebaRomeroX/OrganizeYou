@@ -69,8 +69,11 @@ function loadTasks() {
         typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v);
       const deadline = validDue(t.deadline) ? t.deadline : null;
       const appointment = !deadline && validDue(t.appointment) ? t.appointment : null;
+      // Time since: an independent record (same string forms),
+      // valid value or null - no exclusivity with the two above
+      const since = validDue(t.since) ? t.since : null;
 
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, done };
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, since, done };
     });
   } catch {
     return [];
@@ -386,6 +389,80 @@ function unlockExpiredAppointments() {
   });
 }
 
+/* ---------- Time since (counts up from the last completion) ---------- */
+
+// Current local time as "YYYY-MM-DDTHH:mm" (the since record
+// format). Used by the completion hooks and the modal "Now" button.
+function nowStamp(now = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return (
+    `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}` +
+    `T${p(now.getHours())}:${p(now.getMinutes())}`
+  );
+}
+
+// The instant a "time since" record points at: exact time when
+// given, else 00:00 of that day (the whole day is the last time).
+// null for missing/invalid input.
+function sinceMoment(since) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(since || "");
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  return m[4] != null
+    ? new Date(y, mo, d, Number(m[4]), Number(m[5]))
+    : new Date(y, mo, d, 0, 0, 0, 0);
+}
+
+// Time-since badge text + state, counting UP from the record.
+// Longest unit first: < 10 min "just now" -> 10-minute steps ->
+// hours -> calendar days -> weeks (floor(days/7)) -> months
+// (floor(days/30)). Always "normal" - never urgent/overdue. A
+// future moment clamps to "just now". null for invalid input.
+function sinceInfo(since, now = new Date()) {
+  const moment = sinceMoment(since);
+  if (!moment) return null;
+  const elapsed = now.getTime() - moment.getTime();
+
+  // Calendar days between the record's date and today
+  const dayNum = (dt) =>
+    Math.floor(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()) / 86400000);
+  const diff = dayNum(now) - dayNum(moment);
+
+  if (diff >= 30) {
+    const months = Math.floor(diff / 30);
+    return { text: `${months} month${months > 1 ? "s" : ""}`, state: "normal" };
+  }
+  if (diff >= 7) {
+    const weeks = Math.floor(diff / 7);
+    return { text: `${weeks} week${weeks > 1 ? "s" : ""}`, state: "normal" };
+  }
+  if (diff >= 1) return { text: `${diff} day${diff > 1 ? "s" : ""}`, state: "normal" };
+
+  // Same calendar day: hours, then 10-minute steps
+  if (elapsed >= 3600000) {
+    const h = Math.floor(elapsed / 3600000);
+    return { text: h === 1 ? "1 hour" : `${h} hours`, state: "normal" };
+  }
+  if (elapsed >= 600000) {
+    return { text: `${Math.floor(elapsed / 600000) * 10} min`, state: "normal" };
+  }
+  return { text: "just now", state: "normal" };
+}
+
+// Re-patch the visible since badges in place (same idea as
+// refreshCountdowns)
+function refreshSinces() {
+  document.querySelectorAll(".since-badge").forEach((badge) => {
+    const info = sinceInfo(badge.dataset.since);
+    if (!info) return;
+    if (badge.textContent !== info.text) badge.textContent = info.text;
+    const cls = "since-badge " + info.state;
+    if (badge.className !== cls) badge.className = cls;
+  });
+}
+
 // Keep cycle.dueAt in sync with the task's done state: a done task
 // is due at the next boundary, an active one has nothing pending.
 function syncCycleDue(task) {
@@ -587,11 +664,12 @@ function applyCycleAnchor() {
 
 // Shared state for the repeat/subtask/cycle controls in the task modals
 function createModesState(task = null) {
-  // Split the stored deadline/appointment ("YYYY-MM-DD" or
+  // Split the stored deadline/appointment/since ("YYYY-MM-DD" or
   // "...THH:mm") into the two inputs; empty date = none
   const deadline = task && typeof task.deadline === "string" ? task.deadline : "";
   const appointment =
     task && typeof task.appointment === "string" ? task.appointment : "";
+  const since = task && typeof task.since === "string" ? task.since : "";
   return {
     repeatOn: !!(task && task.repeats),
     target: task && task.repeats ? task.repeats.target : 5,
@@ -607,6 +685,9 @@ function createModesState(task = null) {
     // Appointment: same split, mutually exclusive with the deadline
     appointmentDate: appointment.slice(0, 10),
     appointmentTime: appointment.length > 10 ? appointment.slice(11) : "",
+    // Time since: independent record, same split
+    sinceDate: since.slice(0, 10),
+    sinceTime: since.length > 10 ? since.slice(11) : "",
   };
 }
 
@@ -647,7 +728,14 @@ function modesToData(state, original = null) {
       ? `${state.appointmentDate}T${state.appointmentTime}`
       : state.appointmentDate
     : null;
-  return { repeats, subtasks, cycle, deadline, appointment };
+  // Time since: independent of the two above - a task can have all
+  // three; empty date = the mode is off
+  const since = state.sinceDate
+    ? state.sinceTime
+      ? `${state.sinceDate}T${state.sinceTime}`
+      : state.sinceDate
+    : null;
+  return { repeats, subtasks, cycle, deadline, appointment, since };
 }
 
 // Repeat toggle + target input, and dynamic subtask rows.
@@ -883,6 +971,63 @@ function buildModes(state) {
       state.appointmentTime = apTime.value;
     });
 
+    // --- Time since (independent of deadline/appointment) ---
+    const sc = document.createElement("div");
+    sc.className = "mode-block";
+
+    const scHead = document.createElement("div");
+    scHead.className = "mode-head";
+    const scTitle = document.createElement("span");
+    scTitle.className = "mode-title";
+    scTitle.textContent = "Time since";
+    scHead.appendChild(scTitle);
+
+    const scInputs = document.createElement("div");
+    scInputs.className = "target-wrap deadline-wrap";
+
+    const scDate = document.createElement("input");
+    scDate.type = "date";
+    scDate.className = "modal-input deadline-input";
+    scDate.value = state.sinceDate;
+    scDate.setAttribute("aria-label", "Last time date");
+
+    const scTime = document.createElement("input");
+    scTime.type = "time";
+    scTime.className = "modal-input deadline-input";
+    scTime.value = state.sinceTime;
+    scTime.setAttribute("aria-label", "Last time time (optional)");
+
+    const nowBtn = document.createElement("button");
+    nowBtn.type = "button";
+    nowBtn.className = "now-btn";
+    nowBtn.textContent = "Now";
+    nowBtn.setAttribute("aria-label", "Set the last time to now");
+    nowBtn.addEventListener("click", () => {
+      const stamp = nowStamp();
+      state.sinceDate = stamp.slice(0, 10);
+      state.sinceTime = stamp.slice(11);
+      scDate.value = state.sinceDate;
+      scTime.value = state.sinceTime;
+    });
+
+    scInputs.append(scDate, scTime, nowBtn);
+    scHead.appendChild(scInputs);
+    sc.appendChild(scHead);
+
+    const scHelp = document.createElement("p");
+    scHelp.className = "hint";
+    scHelp.textContent =
+      "Counts up from the last time you did this; completing the task resets it to now. No time set = starts at 00:00 of that day.";
+    sc.appendChild(scHelp);
+    block.appendChild(sc);
+
+    scDate.addEventListener("input", () => {
+      state.sinceDate = scDate.value;
+    });
+    scTime.addEventListener("input", () => {
+      state.sinceTime = scTime.value;
+    });
+
     // --- Subtasks ---
     const subs = document.createElement("div");
     subs.className = "mode-block";
@@ -962,8 +1107,8 @@ function openNewTaskModal() {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle, deadline, appointment } = modesToData(modes);
-      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline, appointment });
+      const { repeats, subtasks, cycle, deadline, appointment, since } = modesToData(modes);
+      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline, appointment, since });
     },
   });
 }
@@ -1041,7 +1186,7 @@ function openEditTaskModal(id) {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle, deadline, appointment } = modesToData(modes, task);
+      const { repeats, subtasks, cycle, deadline, appointment, since } = modesToData(modes, task);
       const prevCycle = task.cycle; // read before overwrite
       task.text = text;
       task.tags = orderedTags(selected);
@@ -1050,6 +1195,7 @@ function openEditTaskModal(id) {
       task.cycle = cycle;
       task.deadline = deadline;
       task.appointment = appointment;
+      task.since = since;
       // Normalize completion for the (possibly new) mode
       if (repeats) task.done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
@@ -1103,6 +1249,7 @@ function addTask(text, tags = [], mode = {}) {
     cycle: mode.cycle || null,
     deadline: mode.deadline || null,
     appointment: mode.appointment || null,
+    since: mode.since || null,
   });
   saveTasks();
   render();
@@ -1112,6 +1259,7 @@ function toggleTask(id) {
   const task = tasks.find((t) => t.id === id);
   if (!task) return;
   if (!task.done && appointmentLocked(task.appointment)) return; // locked
+  const wasDone = task.done;
 
   if (task.repeats) {
     if (task.done) {
@@ -1137,6 +1285,8 @@ function toggleTask(id) {
     task.done = !task.done;
   }
 
+  // A completion stamps the "time since" record; resets keep it
+  if (task.since != null && task.done && !wasDone) task.since = nowStamp();
   syncCycleDue(task);
   saveTasks();
   render();
@@ -1146,6 +1296,7 @@ function toggleSubtask(taskId, subtaskId) {
   const task = tasks.find((t) => t.id === taskId);
   if (!task) return;
   if (!task.done && appointmentLocked(task.appointment)) return; // locked
+  const wasDone = task.done;
   const sub = task.subtasks.find((s) => s.id === subtaskId);
   if (!sub) return;
 
@@ -1158,10 +1309,13 @@ function toggleSubtask(taskId, subtaskId) {
     task.repeats.current = Math.min(task.repeats.current + 1, task.repeats.target);
     // Completion is counter-driven, leftover subtasks don't block it
     task.done = task.repeats.current >= task.repeats.target;
+    // First completion or "done again" stamps the since record
+    if (task.since != null && task.done) task.since = nowStamp();
   } else {
     // Subtask-only: normal toggle, completes when every subtask is ticked
     sub.done = !sub.done;
     task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
+    if (task.since != null && task.done && !wasDone) task.since = nowStamp();
   }
   syncCycleDue(task);
   saveTasks();
@@ -1290,6 +1444,19 @@ function renderTaskItem(task) {
     }
   }
 
+  // Time since: counts up from the last completion and stays
+  // visible even when the task is done
+  if (task.since) {
+    const info = sinceInfo(task.since);
+    if (info) {
+      const badge = document.createElement("span");
+      badge.className = "since-badge " + info.state;
+      badge.textContent = info.text;
+      badge.dataset.since = task.since; // for the 60s refresh
+      line.appendChild(badge);
+    }
+  }
+
   main.appendChild(line);
 
   if (hasSubs) {
@@ -1362,5 +1529,6 @@ setInterval(() => {
   resetDueCycles();
   refreshCountdowns();
   refreshAppointments();
+  refreshSinces();
   unlockExpiredAppointments();
 }, 60 * 1000);

@@ -409,14 +409,14 @@ Decisions:
   badge text in place via dataset.since (no full re-render).
 
 Tasks:
-[ ] 1. Data: task.since + migration (since: null, validDue reused)
-[ ] 2. sinceMoment() + sinceInfo() ladder (just now / 10 min / hours / days / weeks / months)
-[ ] 3. Completion hooks: toggleTask/toggleSubtask set since = now on completion events only
-[ ] 4. Modal "Time since" block: date + time + Now button, hint, edit prefill, clear = off
-[ ] 5. .since-badge always visible (done too) + neutral styles
-[ ] 6. 60s tick: refreshSinces() in-place patch
-[ ] 7. Edge cases (invalid -> null, date-only 00:00, untick/cycle keep record, future clamps to "just now")
-[ ] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
+[x] 1. Data: task.since + migration (since: null, validDue reused)
+[x] 2. sinceMoment() + sinceInfo() ladder (just now / 10 min / hours / days / weeks / months)
+[x] 3. Completion hooks: toggleTask/toggleSubtask set since = now on completion events only
+[x] 4. Modal "Time since" block: date + time + Now button, hint, edit prefill, clear = off
+[x] 5. .since-badge always visible (done too) + neutral styles
+[x] 6. 60s tick: refreshSinces() in-place patch
+[x] 7. Edge cases (invalid -> null, date-only 00:00, untick/cycle keep record, future clamps to "just now")
+[x] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
 [ ] 9. Review and commit
 
 CHANGE LOG
@@ -463,3 +463,4 @@ CHANGE LOG
 - 2026-10-07: Eleventh goal implemented: task.appointment data with migration (deadline wins on conflicts), appointmentInfo()/appointmentLocked() helpers, Appointment block in the modal with auto-clearing mutual exclusion, checkboxes locked until the moment, appointment badge with 60s in-place refresh and in-place unlock.
 - 2026-10-07: Eleventh goal reviewed and completed. All tasks done.
 - 2026-10-07: Twelfth goal defined: time since - per-task "last time" moment (date + optional time, editable with a Now button), badge counts up (just now / 10-min steps / hours / days / weeks / months) and stays visible even when done; completions reset it automatically, independent of deadline/appointment.
+- 2026-10-07: Twelfth goal implemented: task.since data with migration (independent of deadline/appointment), sinceMoment()/sinceInfo() count-up ladder, completion hooks stamp the record (resets keep it), Time since modal block with Now button, always-visible badge with 60s in-place refresh.
