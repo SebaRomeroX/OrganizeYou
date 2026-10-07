@@ -290,6 +290,44 @@ Tasks:
 [x] 6. Regression: goal-8 harness passes with defaults + new anchor cases
 [x] 7. Review and commit
 
+TENTH GOAL: DEADLINE COUNTDOWN
+-------------------------------
+Decisions:
+- Data: task.deadline is a string in one of two forms (migration
+  adds deadline: null to old tasks): "YYYY-MM-DD" = date-only,
+  counts to the END of that day; "YYYY-MM-DDTHH:mm" = with time,
+  full countdown. null = no deadline. Past deadlines are allowed
+  (badge shows overdue immediately).
+- Input: new "Deadline" block in the task modal (same style as
+  the Cycle block): a date input + an optional time input. Empty
+  date = no deadline; date with empty time = date-only mode.
+  Edit modal prefills; clearing the date clears the deadline.
+- Wording (countdownInfo pure function -> { text, state }):
+  date-only: "8 days" -> "1 day" -> "today" (whole deadline day)
+  -> "overdue" next day. Timed: dateDiff >= 2 -> "N days"
+  (calendar); >= 24h -> "1 day"; 60min <= left < 24h -> floor
+  hours ("23 hours" ... "1 hour"); < 60min -> 10-minute floor
+  ("50 min" ... "10 min", STAYS at "10 min" down to zero);
+  past -> "overdue".
+- Display: .countdown-badge in the task row after the cycle and
+  counter badges; hidden when the task is done or has no
+  deadline. States: normal (days) -> urgent (deadline day,
+  hours, minutes) -> overdue (red).
+- Live updates: the existing 60s tick re-patches badge
+  text/class (no full re-render, keeps focus/scroll).
+- Cycle reset: deadline left as-is; after an auto-reset the old
+  deadline shows overdue until the user edits it.
+
+Tasks:
+[ ] 1. Data: task.deadline + migration (deadline: null)
+[ ] 2. countdownInfo(deadline) for both modes (days/today/hours/10min/overdue)
+[ ] 3. Modal deadline block (date + optional time), new + edit + clear
+[ ] 4. Countdown badge in task row + styles (normal/urgent/overdue)
+[ ] 5. 60s tick: re-patch badges without full re-render
+[ ] 6. Edge cases (date-only today, exact boundaries, past/invalid input, done hides badge)
+[ ] 7. Regression: goal 7/8/9 harnesses + new countdown harness
+[ ] 8. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -325,5 +363,6 @@ CHANGE LOG
 - 2026-10-06: Ninth goal defined: cycle reset anchor - global setting for time/week start/month start/month anchor of calendar cycles.
 - 2026-10-06: Ninth goal implemented: global cycleAnchor setting with normalized defaults, anchor-aware day/week/month boundary math, "Cycle reset" settings modal, pending dueAts re-anchored on save.
 - 2026-10-06: Ninth goal reviewed and completed. All tasks done.
+- 2026-10-06: Tenth goal defined: deadline countdown - date-only deadlines count to end of day ("today"), timed deadlines count days then hours then 10-minute steps.
 - 2026-10-06: Adjustment (not a goal): ticking the main checkbox of a combined task (counter + subtasks) now completes it immediately and fills the counter to target; subtasks stay untouched, untick still resets everything.
 - 2026-10-06: Adjustment (not a goal): clicking a subtask of a combined task now counts "done again" - it stays checked and the counter grows (+1, capped at target); checked subtasks can't be unchecked anymore, only the main reset clears them. Subtask-only tasks keep the normal check/uncheck toggle.
