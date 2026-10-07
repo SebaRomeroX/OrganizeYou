@@ -62,7 +62,14 @@ function loadTasks() {
         cycle.dueAt = nextCycleBoundary(cycle);
       }
 
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, done };
+      // Deadline: "YYYY-MM-DD" (end of day) or "YYYY-MM-DDTHH:mm"
+      const deadline =
+        typeof t.deadline === "string" &&
+        /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(t.deadline)
+          ? t.deadline
+          : null;
+
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, done };
     });
   } catch {
     return [];
@@ -215,6 +222,62 @@ function cycleLabel(cycle) {
   const names = { day: "days", week: "weeks", month: "months" };
   const one = { day: "day", week: "week", month: "month" };
   return `Every ${n === 1 ? one[cycle.unit] : n + " " + names[cycle.unit]}`;
+}
+
+// Countdown badge text + state for a deadline.
+// deadline: "YYYY-MM-DD" (counts to the END of that day) or
+// "YYYY-MM-DDTHH:mm" (days -> hours -> 10-minute steps).
+// Returns { text, state } with state "normal" | "urgent" | "overdue",
+// or null for a missing/invalid deadline.
+function countdownInfo(deadline, now = new Date()) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(deadline || "");
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  const timed = m[4] != null;
+
+  // Deadline instant: exact time, or end of day for date-only
+  const due = timed
+    ? new Date(y, mo, d, Number(m[4]), Number(m[5]))
+    : new Date(y, mo, d, 23, 59, 59, 999);
+  const left = due.getTime() - now.getTime();
+  if (left <= 0) return { text: "overdue", state: "overdue" };
+
+  // Calendar days between today's date and the deadline's date
+  const dayNum = (dt) =>
+    Math.floor(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()) / 86400000);
+  const diff = dayNum(new Date(y, mo, d)) - dayNum(now);
+
+  if (!timed) {
+    // Date-only: the whole deadline day reads "today"
+    return diff === 0
+      ? { text: "today", state: "urgent" }
+      : { text: `${diff} day${diff > 1 ? "s" : ""}`, state: "normal" };
+  }
+
+  // Timed: days first, then hours, then 10-minute steps
+  if (diff >= 2) return { text: `${diff} days`, state: "normal" };
+  if (left >= 24 * 3600000) return { text: "1 day", state: "normal" };
+  if (left >= 60 * 60000) {
+    const h = Math.floor(left / 3600000);
+    return { text: h === 1 ? "1 hour" : `${h} hours`, state: "urgent" };
+  }
+  // Under an hour: 10-minute floor, stays at "10 min" down to zero
+  const mins = Math.max(10, Math.floor(left / 600000) * 10);
+  return { text: `${mins} min`, state: "urgent" };
+}
+
+// Re-patch the visible countdown badges in place (no full render,
+// so focus and scroll are untouched)
+function refreshCountdowns() {
+  document.querySelectorAll(".countdown-badge").forEach((badge) => {
+    const info = countdownInfo(badge.dataset.deadline);
+    if (!info) return;
+    if (badge.textContent !== info.text) badge.textContent = info.text;
+    const cls = "countdown-badge " + info.state;
+    if (badge.className !== cls) badge.className = cls;
+  });
 }
 
 // Keep cycle.dueAt in sync with the task's done state: a done task
@@ -418,6 +481,9 @@ function applyCycleAnchor() {
 
 // Shared state for the repeat/subtask/cycle controls in the task modals
 function createModesState(task = null) {
+  // Split the stored deadline ("YYYY-MM-DD" or "...THH:mm") into
+  // the two inputs; empty date = no deadline
+  const deadline = task && typeof task.deadline === "string" ? task.deadline : "";
   return {
     repeatOn: !!(task && task.repeats),
     target: task && task.repeats ? task.repeats.target : 5,
@@ -427,12 +493,16 @@ function createModesState(task = null) {
     cycleOn: !!(task && task.cycle),
     cycleEvery: task && task.cycle ? task.cycle.every : 1,
     cycleUnit: task && task.cycle ? task.cycle.unit : "day",
+    // Deadline: separate date/time inputs, recomposed on save
+    deadlineDate: deadline.slice(0, 10),
+    deadlineTime: deadline.length > 10 ? deadline.slice(11) : "",
   };
 }
 
 // Convert modal state to task data (repeat and subtasks can
-// combine; cycle independent). Returns the cycle schedule with a
-// null dueAt — syncCycleDue fills it in when the task is done.
+// combine; cycle and deadline independent). The cycle comes back
+// with a null dueAt - syncCycleDue fills it in when the task is
+// done.
 function modesToData(state, original = null) {
   let cycle = null;
   if (state.cycleOn) {
@@ -453,7 +523,13 @@ function modesToData(state, original = null) {
     text: s.text.trim(),
     done: !!s.done,
   }));
-  return { repeats, subtasks, cycle };
+  // Deadline: date required, time optional (date-only = end of day)
+  const deadline = state.deadlineDate
+    ? state.deadlineTime
+      ? `${state.deadlineDate}T${state.deadlineTime}`
+      : state.deadlineDate
+    : null;
+  return { repeats, subtasks, cycle, deadline };
 }
 
 // Repeat toggle + target input, and dynamic subtask rows.
@@ -589,6 +665,49 @@ function buildModes(state) {
     }
     block.appendChild(cyc);
 
+    // --- Deadline (independent: date required, time optional) ---
+    const dl = document.createElement("div");
+    dl.className = "mode-block";
+
+    const dlHead = document.createElement("div");
+    dlHead.className = "mode-head";
+    const dlTitle = document.createElement("span");
+    dlTitle.className = "mode-title";
+    dlTitle.textContent = "Deadline";
+    dlHead.appendChild(dlTitle);
+
+    const dlInputs = document.createElement("div");
+    dlInputs.className = "target-wrap deadline-wrap";
+
+    const dlDate = document.createElement("input");
+    dlDate.type = "date";
+    dlDate.className = "modal-input deadline-input";
+    dlDate.value = state.deadlineDate;
+    dlDate.setAttribute("aria-label", "Deadline date");
+    dlDate.addEventListener("input", () => {
+      state.deadlineDate = dlDate.value;
+    });
+
+    const dlTime = document.createElement("input");
+    dlTime.type = "time";
+    dlTime.className = "modal-input deadline-input";
+    dlTime.value = state.deadlineTime;
+    dlTime.setAttribute("aria-label", "Deadline time (optional)");
+    dlTime.addEventListener("input", () => {
+      state.deadlineTime = dlTime.value;
+    });
+
+    dlInputs.append(dlDate, dlTime);
+    dlHead.appendChild(dlInputs);
+    dl.appendChild(dlHead);
+
+    const dlHelp = document.createElement("p");
+    dlHelp.className = "hint";
+    dlHelp.textContent =
+      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes.";
+    dl.appendChild(dlHelp);
+    block.appendChild(dl);
+
     // --- Subtasks ---
     const subs = document.createElement("div");
     subs.className = "mode-block";
@@ -668,8 +787,8 @@ function openNewTaskModal() {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle } = modesToData(modes);
-      addTask(text, orderedTags(selected), { repeats, subtasks, cycle });
+      const { repeats, subtasks, cycle, deadline } = modesToData(modes);
+      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline });
     },
   });
 }
@@ -747,13 +866,14 @@ function openEditTaskModal(id) {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle } = modesToData(modes, task);
+      const { repeats, subtasks, cycle, deadline } = modesToData(modes, task);
       const prevCycle = task.cycle; // read before overwrite
       task.text = text;
       task.tags = orderedTags(selected);
       task.repeats = repeats;
       task.subtasks = subtasks;
       task.cycle = cycle;
+      task.deadline = deadline;
       // Normalize completion for the (possibly new) mode
       if (repeats) task.done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
@@ -805,6 +925,7 @@ function addTask(text, tags = [], mode = {}) {
     repeats: mode.repeats || null,
     subtasks: mode.subtasks || [],
     cycle: mode.cycle || null,
+    deadline: mode.deadline || null,
   });
   saveTasks();
   render();
@@ -972,6 +1093,18 @@ function renderTaskItem(task) {
     line.appendChild(badge);
   }
 
+  // Countdown: hidden when done or without a (valid) deadline
+  if (!task.done && task.deadline) {
+    const info = countdownInfo(task.deadline);
+    if (info) {
+      const badge = document.createElement("span");
+      badge.className = "countdown-badge " + info.state;
+      badge.textContent = info.text;
+      badge.dataset.deadline = task.deadline; // for the 60s refresh
+      line.appendChild(badge);
+    }
+  }
+
   main.appendChild(line);
 
   if (hasSubs) {
@@ -1035,7 +1168,10 @@ categoriesBtn.addEventListener("click", openCategoriesModal);
 settingsBtn.addEventListener("click", openSettingsModal);
 
 // Reset cycle tasks that came due while the app was closed, then
-// keep checking every minute while the tab stays open
+// keep checking (and refreshing countdowns) every minute
 resetDueCycles();
 render();
-setInterval(resetDueCycles, 60 * 1000);
+setInterval(() => {
+  resetDueCycles();
+  refreshCountdowns();
+}, 60 * 1000);
