@@ -375,6 +375,50 @@ Tasks:
 [x] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
 [x] 9. Review and commit
 
+TWELFTH GOAL: TIME SINCE
+-------------------------
+Decisions:
+- Concept: some tasks count how much time has passed since the
+  last time they were done ("2 days since last time").
+- Data: task.since, same string forms as deadline/appointment
+  (migration adds since: null): "YYYY-MM-DD" (date-only) or
+  "YYYY-MM-DDTHH:mm" (timed). null = no time-since mode. Fully
+  independent of deadline and appointment - a task can have all
+  three; the modal blocks do NOT clear each other.
+- Date-only anchor = 00:00 of that day (same rule as appointment).
+- Recording (auto + editable): completing the task sets
+  since = now - a tick that turns done on, and a combined
+  "done again" subtask click while already done. Unticking, the
+  main reset and the cycle auto-reset KEEP the record (it is the
+  history of the last completion). Counter-only intermediate
+  ticks don't touch it. The modal can set/adjust the moment by
+  hand ("Now" button fills the current minute); clearing the date
+  turns the mode off.
+- Wording (sinceInfo pure function -> { text, state }): counts
+  UP, always state "normal" (never urgent/overdue), longest unit
+  first: < 10 min "just now" -> 10-minute steps "10 min" ...
+  "50 min" -> "1 hour" ... "23 hours" (both buckets only on the
+  same calendar day) -> calendar-day diff >= 1: "1 day" ...
+  "6 days" -> floor(days/7): "1 week" ... "4 weeks" (< 30 days)
+  -> floor(days/30): "1 month" ... . A future moment clamps to
+  "just now"; invalid input -> no badge.
+- Display: .since-badge after the appointment badge, ALWAYS shown
+  - even when the task is done (counting up from the last
+  completion is the whole point of the concept).
+- Live updates: the 60s tick gains refreshSinces() which patches
+  badge text in place via dataset.since (no full re-render).
+
+Tasks:
+[ ] 1. Data: task.since + migration (since: null, validDue reused)
+[ ] 2. sinceMoment() + sinceInfo() ladder (just now / 10 min / hours / days / weeks / months)
+[ ] 3. Completion hooks: toggleTask/toggleSubtask set since = now on completion events only
+[ ] 4. Modal "Time since" block: date + time + Now button, hint, edit prefill, clear = off
+[ ] 5. .since-badge always visible (done too) + neutral styles
+[ ] 6. 60s tick: refreshSinces() in-place patch
+[ ] 7. Edge cases (invalid -> null, date-only 00:00, untick/cycle keep record, future clamps to "just now")
+[ ] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
+[ ] 9. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -418,3 +462,4 @@ CHANGE LOG
 - 2026-10-07: Eleventh goal defined: appointments - task locked until a user-set date/time (date-only unlocks at 00:00 of that day), badge counts "in N days/hours/10 min" then sticks at "now"; mutually exclusive with deadlines (modal blocks auto-clear each other).
 - 2026-10-07: Eleventh goal implemented: task.appointment data with migration (deadline wins on conflicts), appointmentInfo()/appointmentLocked() helpers, Appointment block in the modal with auto-clearing mutual exclusion, checkboxes locked until the moment, appointment badge with 60s in-place refresh and in-place unlock.
 - 2026-10-07: Eleventh goal reviewed and completed. All tasks done.
+- 2026-10-07: Twelfth goal defined: time since - per-task "last time" moment (date + optional time, editable with a Now button), badge counts up (just now / 10-min steps / hours / days / weeks / months) and stays visible even when done; completions reset it automatically, independent of deadline/appointment.
