@@ -419,6 +419,48 @@ Tasks:
 [x] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
 [x] 9. Review and commit
 
+THIRTEENTH GOAL: TASKS DONE COUNTER
+-----------------------------------
+Decisions:
+- Concept: a summary of how many tasks the user has completed:
+  today, this week, this month, this year and in total.
+- Data: new localStorage key organizeyou.doneLog = array of
+  { id, t } (task id + completion timestamp in ms). Loaded and
+  normalized on start (invalid entries dropped), default [].
+  No pruning - total needs everything and entries are tiny.
+- Log maintenance is driven by USER ACTIONS only:
+  - push when a task BECOMES done: simple tick, main-checkbox
+    completion of a combined task (adjustment A), last-subtick
+    of a subtask-only task;
+  - pop that task's most recent entry when the user UN-DONES
+    it (untick / subtask un-tick): counts go back down.
+- Never touched: automatic cycle/anchor resets (the completion
+  stands, the task just restarts), "done again" clicks on an
+  already-done task (no done transition -> not counted) and
+  task deletion (history kept). Tasks already done before this
+  goal have no entry, so counting starts at install.
+- Counting: pure helper doneCounts(log, now) -> { today, week,
+  month, year, total }: today from local midnight, month from
+  the 1st, year from Jan 1; week starts on weekStartDay of the
+  cycle reset setting (goal 9 anchor, default Monday); total =
+  every entry.
+- UI: summary strip at the top of the page, under the page
+  header and above the task input (amends the old "input
+  first" layout order): five cells - Today, This week, This
+  month, This year, Total; thousands separator on Total.
+  Rendered from render() so counts move on tick; the 60s tick
+  re-renders it so "Today" rolls over at midnight.
+
+Tasks:
+[ ] 1. Data: doneLog key + load/normalize on start (default [])
+[ ] 2. Log hooks: push on done transitions, pop on user undo (toggleTask/toggleSubtask)
+[ ] 3. doneCounts(log, now): today/week/month/year/total (weekStartDay aware)
+[ ] 4. UI: summary strip in index.html + styles.css (five cells, dark theme)
+[ ] 5. Wire into render() + 60s tick refresh (midnight rollover)
+[ ] 6. Edge cases (undo without entry, cycle reset keeps, done-again not counted, deletion keeps)
+[ ] 7. Regression: new counter harness + all 7 existing harnesses
+[ ] 8. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -468,3 +510,4 @@ CHANGE LOG
 - 2026-10-07: Adjustment (not a goal): cycling tasks with partial progress now reset at the cycle boundary too - dueAt is also scheduled for undone tasks with progress (calendar units at the next anchor boundary, hourly N hours after the first partial tick), resetDueCycles/applyCycleAnchor no longer require done, the edit modal keeps the pending reset instead of wiping it, and load backfills tasks stuck from earlier versions.
 - 2026-10-07: Adjustment (not a goal): deadline, appointment and time since can now be removed from the task modal - each block gained a × clear button (clears inputs and state directly), the hints explain removal, and the date/time inputs also listen for change events.
 - 2026-10-07: Adjustment (not a goal): Deadline, Appointment and Time since now follow the cycle on/off pattern in the modal - a toggle reveals the inputs, unchecking clears the value and hides them (replaces the × clear buttons); enabling prefills today (the current minute for time since), enabling one of the mutually exclusive pair unchecks the other, and hints end with "Uncheck to remove".
+- 2026-10-07: Thirteenth goal defined: tasks done counter - a summary strip at the top shows completions today / this week / this month / this year / total, backed by a doneLog of { id, t } entries pushed on every user-driven completion and removed again when the user undoes one (automatic cycle resets keep the entry).
