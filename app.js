@@ -463,20 +463,43 @@ function refreshSinces() {
   });
 }
 
-// Keep cycle.dueAt in sync with the task's done state: a done task
-// is due at the next boundary, an active one has nothing pending.
+// Keep cycle.dueAt in sync with the task's progress: a done task
+// is due at the next boundary, an active one WITH partial progress
+// too (so stale ticks clear when the cycle turns over), one
+// without progress has nothing pending.
 function syncCycleDue(task) {
   if (!task.cycle) return;
-  task.cycle.dueAt = task.done ? nextCycleBoundary(task.cycle) : null;
+  // A dueAt that already passed stays: resetDueCycles() clears the
+  // stale state at the next tick instead of losing the deadline
+  if (task.cycle.dueAt != null && task.cycle.dueAt <= Date.now()) return;
+  if (task.done) {
+    task.cycle.dueAt = nextCycleBoundary(task.cycle);
+    return;
+  }
+  // Undone: only partial progress needs a pending reset
+  const progress =
+    (task.repeats != null && task.repeats.current > 0) ||
+    task.subtasks.some((s) => s.done);
+  if (!progress) {
+    task.cycle.dueAt = null;
+    return;
+  }
+  // Calendar units reset at the next anchor-aware boundary; an
+  // hourly cycle counts N hours from the FIRST partial tick (later
+  // ticks don't push the moment away)
+  if (task.cycle.unit !== "hour" || task.cycle.dueAt == null) {
+    task.cycle.dueAt = nextCycleBoundary(task.cycle);
+  }
 }
 
-// Reset every cycle task whose time has come (progress cleared).
+// Reset every cycle task whose time has come (progress cleared),
+// no matter whether it was completed or only partially started.
 // Returns true if anything changed.
 function resetDueCycles() {
   const now = Date.now();
   let changed = false;
   tasks.forEach((t) => {
-    if (t.cycle && t.done && t.cycle.dueAt != null && now >= t.cycle.dueAt) {
+    if (t.cycle && t.cycle.dueAt != null && now >= t.cycle.dueAt) {
       t.done = false;
       if (t.repeats) t.repeats.current = 0;
       t.subtasks.forEach((s) => (s.done = false));
@@ -488,6 +511,22 @@ function resetDueCycles() {
     saveTasks();
     render();
   }
+  return changed;
+}
+
+// Schedule pending resets for started-but-unfinished cycle tasks at
+// load: dueAt used to exist on completed tasks only, so a partial
+// task stuck from an earlier version never reset. Returns true if
+// anything changed.
+function backfillPartialCycles() {
+  let changed = false;
+  tasks.forEach((t) => {
+    if (!t.cycle || t.done) return;
+    const before = t.cycle.dueAt;
+    syncCycleDue(t);
+    if (t.cycle.dueAt !== before) changed = true;
+  });
+  if (changed) saveTasks();
   return changed;
 }
 
@@ -648,7 +687,10 @@ function openSettingsModal() {
 function applyCycleAnchor() {
   let changed = false;
   tasks.forEach((t) => {
-    if (t.cycle && t.done && t.cycle.unit !== "hour") {
+    // Re-anchor done tasks and started-but-unfinished ones (their
+    // pending partial reset follows the anchor too); clean undone
+    // tasks have no dueAt and stay untouched
+    if (t.cycle && t.cycle.unit !== "hour" && (t.done || t.cycle.dueAt != null)) {
       const due = nextCycleBoundary(t.cycle);
       if (t.cycle.dueAt !== due) {
         t.cycle.dueAt = due;
@@ -1199,17 +1241,24 @@ function openEditTaskModal(id) {
       // Normalize completion for the (possibly new) mode
       if (repeats) task.done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
-      // Keep dueAt when the schedule is unchanged, recompute otherwise
+      // Keep dueAt when the schedule is unchanged, recompute otherwise.
+      // Undone: keep a pending partial reset (syncCycleDue); a changed
+      // schedule recomputes it from scratch. Done: keep the boundary
+      // when the schedule is the same (it counts from completion)
       if (task.cycle) {
         const sameSchedule =
           prevCycle &&
           prevCycle.every === task.cycle.every &&
           prevCycle.unit === task.cycle.unit;
-        task.cycle.dueAt = !task.done
-          ? null
-          : sameSchedule && prevCycle.dueAt != null
-            ? prevCycle.dueAt
-            : nextCycleBoundary(task.cycle);
+        if (task.done) {
+          task.cycle.dueAt =
+            sameSchedule && prevCycle.dueAt != null
+              ? prevCycle.dueAt
+              : nextCycleBoundary(task.cycle);
+        } else {
+          if (!sameSchedule) task.cycle.dueAt = null;
+          syncCycleDue(task);
+        }
       }
       saveTasks();
       render();
@@ -1520,9 +1569,11 @@ newTaskBtn.addEventListener("click", openNewTaskModal);
 categoriesBtn.addEventListener("click", openCategoriesModal);
 settingsBtn.addEventListener("click", openSettingsModal);
 
-// Reset cycle tasks that came due while the app was closed, then
-// keep everything fresh every minute: cycle resets, badge texts,
-// and expired appointment locks (in place, no full render)
+// Schedule partial cycle tasks stuck from earlier versions, reset
+// cycle tasks that came due while the app was closed, then keep
+// everything fresh every minute: cycle resets, badge texts, and
+// expired appointment locks (in place, no full render)
+backfillPartialCycles();
 resetDueCycles();
 render();
 setInterval(() => {
