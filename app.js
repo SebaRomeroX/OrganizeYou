@@ -787,6 +787,28 @@ function buildModes(state) {
     const block = document.createElement("div");
     block.className = "modes";
 
+    // Date/time fields sync on both events: some pickers only
+    // fire "change" when a value is committed or cleared
+    const onEdit = (el, fn) => {
+      el.addEventListener("input", fn);
+      el.addEventListener("change", fn);
+    };
+
+    // × button that removes a time field: clears both inputs and
+    // the state directly (no reliance on input events)
+    const clearBtn = (label, inputs, clear) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "icon-btn delete-btn";
+      btn.textContent = "×";
+      btn.setAttribute("aria-label", label);
+      btn.addEventListener("click", () => {
+        inputs.forEach((el) => (el.value = ""));
+        clear();
+      });
+      return btn;
+    };
+
     // --- Repeat ---
     const repeat = document.createElement("div");
     repeat.className = "mode-block";
@@ -940,14 +962,19 @@ function buildModes(state) {
     dlTime.value = state.deadlineTime;
     dlTime.setAttribute("aria-label", "Deadline time (optional)");
 
-    dlInputs.append(dlDate, dlTime);
+    const dlClear = clearBtn("Remove deadline", [dlDate, dlTime], () => {
+      state.deadlineDate = "";
+      state.deadlineTime = "";
+    });
+
+    dlInputs.append(dlDate, dlTime, dlClear);
     dlHead.appendChild(dlInputs);
     dl.appendChild(dlHead);
 
     const dlHelp = document.createElement("p");
     dlHelp.className = "hint";
     dlHelp.textContent =
-      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes. Can\u2019t be combined with an appointment.";
+      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes. Can\u2019t be combined with an appointment. Clear it with × to remove.";
     dl.appendChild(dlHelp);
     block.appendChild(dl);
 
@@ -976,19 +1003,25 @@ function buildModes(state) {
     apTime.value = state.appointmentTime;
     apTime.setAttribute("aria-label", "Appointment time (optional)");
 
-    apInputs.append(apDate, apTime);
+    const apClear = clearBtn("Remove appointment", [apDate, apTime], () => {
+      state.appointmentDate = "";
+      state.appointmentTime = "";
+    });
+
+    apInputs.append(apDate, apTime, apClear);
     apHead.appendChild(apInputs);
     ap.appendChild(apHead);
 
     const apHelp = document.createElement("p");
     apHelp.className = "hint";
     apHelp.textContent =
-      "The task stays locked until this moment (00:00 of the day without a time), then reads \u201cnow\u201d. Can\u2019t be combined with a deadline.";
+      "The task stays locked until this moment (00:00 of the day without a time), then reads \u201cnow\u201d. Can\u2019t be combined with a deadline. Clear it with × to remove.";
     ap.appendChild(apHelp);
     block.appendChild(ap);
 
     // Mutual exclusion: setting a date on one side clears the other
-    dlDate.addEventListener("input", () => {
+    // (clearing only affects its own block)
+    onEdit(dlDate, () => {
       state.deadlineDate = dlDate.value;
       if (dlDate.value) {
         state.appointmentDate = "";
@@ -997,10 +1030,10 @@ function buildModes(state) {
         apTime.value = "";
       }
     });
-    dlTime.addEventListener("input", () => {
+    onEdit(dlTime, () => {
       state.deadlineTime = dlTime.value;
     });
-    apDate.addEventListener("input", () => {
+    onEdit(apDate, () => {
       state.appointmentDate = apDate.value;
       if (apDate.value) {
         state.deadlineDate = "";
@@ -1009,7 +1042,7 @@ function buildModes(state) {
         dlTime.value = "";
       }
     });
-    apTime.addEventListener("input", () => {
+    onEdit(apTime, () => {
       state.appointmentTime = apTime.value;
     });
 
@@ -1052,21 +1085,26 @@ function buildModes(state) {
       scTime.value = state.sinceTime;
     });
 
-    scInputs.append(scDate, scTime, nowBtn);
+    const scClear = clearBtn("Remove time since", [scDate, scTime], () => {
+      state.sinceDate = "";
+      state.sinceTime = "";
+    });
+
+    scInputs.append(scDate, scTime, nowBtn, scClear);
     scHead.appendChild(scInputs);
     sc.appendChild(scHead);
 
     const scHelp = document.createElement("p");
     scHelp.className = "hint";
     scHelp.textContent =
-      "Counts up from the last time you did this; completing the task resets it to now. No time set = starts at 00:00 of that day.";
+      "Counts up from the last time you did this; completing the task resets it to now. No time set = starts at 00:00 of that day. Clear it with × to remove.";
     sc.appendChild(scHelp);
     block.appendChild(sc);
 
-    scDate.addEventListener("input", () => {
+    onEdit(scDate, () => {
       state.sinceDate = scDate.value;
     });
-    scTime.addEventListener("input", () => {
+    onEdit(scTime, () => {
       state.sinceTime = scTime.value;
     });
 
