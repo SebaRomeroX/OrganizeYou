@@ -365,14 +365,14 @@ Decisions:
   lock expires (no full re-render; full render only as fallback).
 
 Tasks:
-[ ] 1. Data: task.appointment + migration (appointment: null)
-[ ] 2. appointmentInfo() both modes (in N days/hours/10min, then sticky "now")
-[ ] 3. Mutual exclusion: modal blocks auto-clear each other + hint
-[ ] 4. Lock: main checkbox, subtasks, counter disabled before the moment
-[ ] 5. Appointment badge in task row + styles (normal/urgent "now")
-[ ] 6. 60s tick: patch badges and unlock expired locks in place
-[ ] 7. Edge cases (00:00 boundary, exact moment, done hides badge, cycle re-lock, invalid input -> null)
-[ ] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
+[x] 1. Data: task.appointment + migration (appointment: null)
+[x] 2. appointmentInfo() both modes (in N days/hours/10min, then sticky "now")
+[x] 3. Mutual exclusion: modal blocks auto-clear each other + hint
+[x] 4. Lock: main checkbox, subtasks, counter disabled before the moment
+[x] 5. Appointment badge in task row + styles (normal/urgent "now")
+[x] 6. 60s tick: patch badges and unlock expired locks in place
+[x] 7. Edge cases (00:00 boundary, exact moment, done hides badge, cycle re-lock, invalid input -> null)
+[x] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
 [ ] 9. Review and commit
 
 CHANGE LOG
@@ -416,3 +416,4 @@ CHANGE LOG
 - 2026-10-06: Adjustment (not a goal): ticking the main checkbox of a combined task (counter + subtasks) now completes it immediately and fills the counter to target; subtasks stay untouched, untick still resets everything.
 - 2026-10-06: Adjustment (not a goal): clicking a subtask of a combined task now counts "done again" - it stays checked and the counter grows (+1, capped at target); checked subtasks can't be unchecked anymore, only the main reset clears them. Subtask-only tasks keep the normal check/uncheck toggle.
 - 2026-10-07: Eleventh goal defined: appointments - task locked until a user-set date/time (date-only unlocks at 00:00 of that day), badge counts "in N days/hours/10 min" then sticks at "now"; mutually exclusive with deadlines (modal blocks auto-clear each other).
+- 2026-10-07: Eleventh goal implemented: task.appointment data with migration (deadline wins on conflicts), appointmentInfo()/appointmentLocked() helpers, Appointment block in the modal with auto-clearing mutual exclusion, checkboxes locked until the moment, appointment badge with 60s in-place refresh and in-place unlock.

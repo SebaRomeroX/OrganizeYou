@@ -62,14 +62,15 @@ function loadTasks() {
         cycle.dueAt = nextCycleBoundary(cycle);
       }
 
-      // Deadline: "YYYY-MM-DD" (end of day) or "YYYY-MM-DDTHH:mm"
-      const deadline =
-        typeof t.deadline === "string" &&
-        /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(t.deadline)
-          ? t.deadline
-          : null;
+      // Deadline / appointment: "YYYY-MM-DD" (deadline ends that day,
+      // appointment starts it) or "YYYY-MM-DDTHH:mm". Mutually
+      // exclusive; deadline wins on hand-edited data.
+      const validDue = (v) =>
+        typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v);
+      const deadline = validDue(t.deadline) ? t.deadline : null;
+      const appointment = !deadline && validDue(t.appointment) ? t.appointment : null;
 
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, done };
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, done };
     });
   } catch {
     return [];
@@ -280,6 +281,111 @@ function refreshCountdowns() {
   });
 }
 
+// The instant an appointment unlocks: exact time when given, else
+// 00:00 of that day (the whole day is the appointment day).
+// null for missing/invalid input.
+function appointmentMoment(appointment) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(appointment || "");
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  return m[4] != null
+    ? new Date(y, mo, d, Number(m[4]), Number(m[5]))
+    : new Date(y, mo, d, 0, 0, 0, 0);
+}
+
+// A task with a future appointment is locked: main checkbox,
+// subtasks and counter clicks all stay disabled until the moment
+function appointmentLocked(appointment, now = new Date()) {
+  const moment = appointmentMoment(appointment);
+  return moment != null && now.getTime() < moment.getTime();
+}
+
+// Disabled state + aria-label for the main checkbox, combining the
+// base role (counter / subtask-only / plain) with the appointment
+// lock. Reused by the renderer and by the in-place unlock.
+function applyMainCheckboxState(box, task) {
+  const locked = !task.done && appointmentLocked(task.appointment);
+  if (locked) {
+    box.disabled = true;
+    box.setAttribute("aria-label", "Locked until the appointment moment");
+  } else if (task.repeats) {
+    box.disabled = false;
+    box.setAttribute(
+      "aria-label",
+      `Progress: ${task.repeats.current} of ${task.repeats.target}`
+    );
+  } else if (task.subtasks.length > 0) {
+    box.disabled = true; // subtask-only: completes via its subtasks
+    box.setAttribute("aria-label", "Completes when every subtask is ticked");
+  } else {
+    box.disabled = false;
+    box.setAttribute("aria-label", "Mark task as done");
+  }
+}
+
+// Appointment badge text + state. Before the moment it counts UP to
+// it ("in 3 days" -> "in 1 hour" -> "in 10 min"); from the moment
+// on it reads "now" and STAYS "now" while the task is undone -
+// never "overdue". Returns null for missing/invalid input.
+function appointmentInfo(appointment, now = new Date()) {
+  const moment = appointmentMoment(appointment);
+  if (!moment) return null;
+  const left = moment.getTime() - now.getTime();
+  if (left <= 0) return { text: "now", state: "urgent" };
+
+  // Calendar days between today's date and the appointment's date
+  const dayNum = (dt) =>
+    Math.floor(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()) / 86400000);
+  const diff = dayNum(moment) - dayNum(now);
+  const timed = appointment.length > 10;
+
+  if (!timed) {
+    // Date-only: unlock is 00:00 of that day, so a positive wait
+    // always spans at least one whole calendar day
+    return { text: `in ${diff} day${diff > 1 ? "s" : ""}`, state: "normal" };
+  }
+
+  // Timed: days first, then hours, then 10-minute steps
+  if (diff >= 2) return { text: `in ${diff} days`, state: "normal" };
+  if (left >= 24 * 3600000) return { text: "in 1 day", state: "normal" };
+  if (left >= 60 * 60000) {
+    const h = Math.floor(left / 3600000);
+    return { text: `in ${h} hour${h === 1 ? "" : "s"}`, state: "urgent" };
+  }
+  // Under an hour: 10-minute floor, stays at "in 10 min" down to zero
+  const mins = Math.max(10, Math.floor(left / 600000) * 10);
+  return { text: `in ${mins} min`, state: "urgent" };
+}
+
+// Re-patch the visible appointment badges in place (same idea as
+// refreshCountdowns)
+function refreshAppointments() {
+  document.querySelectorAll(".appointment-badge").forEach((badge) => {
+    const info = appointmentInfo(badge.dataset.appointment);
+    if (!info) return;
+    if (badge.textContent !== info.text) badge.textContent = info.text;
+    const cls = "appointment-badge " + info.state;
+    if (badge.className !== cls) badge.className = cls;
+  });
+}
+
+// Unlock in place when an appointment moment passes while the app
+// is open: re-enable the main and subtask checkboxes instead of a
+// full re-render (focus and scroll stay untouched)
+function unlockExpiredAppointments() {
+  document.querySelectorAll(".task-item").forEach((li) => {
+    const task = tasks.find((t) => t.id === li.dataset.taskId);
+    if (!task || !task.appointment || task.done) return;
+    if (appointmentLocked(task.appointment)) return; // still locked
+    li.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+      if (box.dataset.role === "main") applyMainCheckboxState(box, task);
+      else if (box.disabled) box.disabled = false; // subtask boxes
+    });
+  });
+}
+
 // Keep cycle.dueAt in sync with the task's done state: a done task
 // is due at the next boundary, an active one has nothing pending.
 function syncCycleDue(task) {
@@ -481,9 +587,11 @@ function applyCycleAnchor() {
 
 // Shared state for the repeat/subtask/cycle controls in the task modals
 function createModesState(task = null) {
-  // Split the stored deadline ("YYYY-MM-DD" or "...THH:mm") into
-  // the two inputs; empty date = no deadline
+  // Split the stored deadline/appointment ("YYYY-MM-DD" or
+  // "...THH:mm") into the two inputs; empty date = none
   const deadline = task && typeof task.deadline === "string" ? task.deadline : "";
+  const appointment =
+    task && typeof task.appointment === "string" ? task.appointment : "";
   return {
     repeatOn: !!(task && task.repeats),
     target: task && task.repeats ? task.repeats.target : 5,
@@ -496,6 +604,9 @@ function createModesState(task = null) {
     // Deadline: separate date/time inputs, recomposed on save
     deadlineDate: deadline.slice(0, 10),
     deadlineTime: deadline.length > 10 ? deadline.slice(11) : "",
+    // Appointment: same split, mutually exclusive with the deadline
+    appointmentDate: appointment.slice(0, 10),
+    appointmentTime: appointment.length > 10 ? appointment.slice(11) : "",
   };
 }
 
@@ -523,13 +634,20 @@ function modesToData(state, original = null) {
     text: s.text.trim(),
     done: !!s.done,
   }));
-  // Deadline: date required, time optional (date-only = end of day)
+  // Deadline: date required, time optional (date-only = end of day).
+  // Appointment: same shape, but the two are mutually exclusive -
+  // deadline wins on conflicting state (the UI auto-clears anyway)
   const deadline = state.deadlineDate
     ? state.deadlineTime
       ? `${state.deadlineDate}T${state.deadlineTime}`
       : state.deadlineDate
     : null;
-  return { repeats, subtasks, cycle, deadline };
+  const appointment = !deadline && state.appointmentDate
+    ? state.appointmentTime
+      ? `${state.appointmentDate}T${state.appointmentTime}`
+      : state.appointmentDate
+    : null;
+  return { repeats, subtasks, cycle, deadline, appointment };
 }
 
 // Repeat toggle + target input, and dynamic subtask rows.
@@ -665,7 +783,8 @@ function buildModes(state) {
     }
     block.appendChild(cyc);
 
-    // --- Deadline (independent: date required, time optional) ---
+    // --- Deadline / Appointment (mutually exclusive) ---
+    // Built together so each side can clear the other's inputs
     const dl = document.createElement("div");
     dl.className = "mode-block";
 
@@ -684,18 +803,12 @@ function buildModes(state) {
     dlDate.className = "modal-input deadline-input";
     dlDate.value = state.deadlineDate;
     dlDate.setAttribute("aria-label", "Deadline date");
-    dlDate.addEventListener("input", () => {
-      state.deadlineDate = dlDate.value;
-    });
 
     const dlTime = document.createElement("input");
     dlTime.type = "time";
     dlTime.className = "modal-input deadline-input";
     dlTime.value = state.deadlineTime;
     dlTime.setAttribute("aria-label", "Deadline time (optional)");
-    dlTime.addEventListener("input", () => {
-      state.deadlineTime = dlTime.value;
-    });
 
     dlInputs.append(dlDate, dlTime);
     dlHead.appendChild(dlInputs);
@@ -704,9 +817,71 @@ function buildModes(state) {
     const dlHelp = document.createElement("p");
     dlHelp.className = "hint";
     dlHelp.textContent =
-      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes.";
+      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes. Can\u2019t be combined with an appointment.";
     dl.appendChild(dlHelp);
     block.appendChild(dl);
+
+    const ap = document.createElement("div");
+    ap.className = "mode-block";
+
+    const apHead = document.createElement("div");
+    apHead.className = "mode-head";
+    const apTitle = document.createElement("span");
+    apTitle.className = "mode-title";
+    apTitle.textContent = "Appointment";
+    apHead.appendChild(apTitle);
+
+    const apInputs = document.createElement("div");
+    apInputs.className = "target-wrap deadline-wrap";
+
+    const apDate = document.createElement("input");
+    apDate.type = "date";
+    apDate.className = "modal-input deadline-input";
+    apDate.value = state.appointmentDate;
+    apDate.setAttribute("aria-label", "Appointment date");
+
+    const apTime = document.createElement("input");
+    apTime.type = "time";
+    apTime.className = "modal-input deadline-input";
+    apTime.value = state.appointmentTime;
+    apTime.setAttribute("aria-label", "Appointment time (optional)");
+
+    apInputs.append(apDate, apTime);
+    apHead.appendChild(apInputs);
+    ap.appendChild(apHead);
+
+    const apHelp = document.createElement("p");
+    apHelp.className = "hint";
+    apHelp.textContent =
+      "The task stays locked until this moment (00:00 of the day without a time), then reads \u201cnow\u201d. Can\u2019t be combined with a deadline.";
+    ap.appendChild(apHelp);
+    block.appendChild(ap);
+
+    // Mutual exclusion: setting a date on one side clears the other
+    dlDate.addEventListener("input", () => {
+      state.deadlineDate = dlDate.value;
+      if (dlDate.value) {
+        state.appointmentDate = "";
+        state.appointmentTime = "";
+        apDate.value = "";
+        apTime.value = "";
+      }
+    });
+    dlTime.addEventListener("input", () => {
+      state.deadlineTime = dlTime.value;
+    });
+    apDate.addEventListener("input", () => {
+      state.appointmentDate = apDate.value;
+      if (apDate.value) {
+        state.deadlineDate = "";
+        state.deadlineTime = "";
+        dlDate.value = "";
+        dlTime.value = "";
+      }
+    });
+    apTime.addEventListener("input", () => {
+      state.appointmentTime = apTime.value;
+    });
 
     // --- Subtasks ---
     const subs = document.createElement("div");
@@ -787,8 +962,8 @@ function openNewTaskModal() {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle, deadline } = modesToData(modes);
-      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline });
+      const { repeats, subtasks, cycle, deadline, appointment } = modesToData(modes);
+      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline, appointment });
     },
   });
 }
@@ -866,7 +1041,7 @@ function openEditTaskModal(id) {
       buildTagChips(selected)(container);
     },
     onSubmit: ({ text }) => {
-      const { repeats, subtasks, cycle, deadline } = modesToData(modes, task);
+      const { repeats, subtasks, cycle, deadline, appointment } = modesToData(modes, task);
       const prevCycle = task.cycle; // read before overwrite
       task.text = text;
       task.tags = orderedTags(selected);
@@ -874,6 +1049,7 @@ function openEditTaskModal(id) {
       task.subtasks = subtasks;
       task.cycle = cycle;
       task.deadline = deadline;
+      task.appointment = appointment;
       // Normalize completion for the (possibly new) mode
       if (repeats) task.done = repeats.current >= repeats.target;
       else if (subtasks.length > 0) task.done = subtasks.every((s) => s.done);
@@ -926,6 +1102,7 @@ function addTask(text, tags = [], mode = {}) {
     subtasks: mode.subtasks || [],
     cycle: mode.cycle || null,
     deadline: mode.deadline || null,
+    appointment: mode.appointment || null,
   });
   saveTasks();
   render();
@@ -934,6 +1111,7 @@ function addTask(text, tags = [], mode = {}) {
 function toggleTask(id) {
   const task = tasks.find((t) => t.id === id);
   if (!task) return;
+  if (!task.done && appointmentLocked(task.appointment)) return; // locked
 
   if (task.repeats) {
     if (task.done) {
@@ -967,6 +1145,7 @@ function toggleTask(id) {
 function toggleSubtask(taskId, subtaskId) {
   const task = tasks.find((t) => t.id === taskId);
   if (!task) return;
+  if (!task.done && appointmentLocked(task.appointment)) return; // locked
   const sub = task.subtasks.find((s) => s.id === subtaskId);
   if (!sub) return;
 
@@ -1047,24 +1226,17 @@ function renderTasks() {
 function renderTaskItem(task) {
   const li = document.createElement("li");
   li.className = "task-item" + (task.done ? " done" : "");
+  li.dataset.taskId = task.id; // hooks for in-place appointment unlock
 
   const hasSubs = task.subtasks.length > 0;
+  const locked = !task.done && appointmentLocked(task.appointment);
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = task.done;
-  if (task.repeats) {
-    // Counter tasks (with or without subtasks): clickable
-    checkbox.setAttribute(
-      "aria-label",
-      `Progress: ${task.repeats.current} of ${task.repeats.target}`
-    );
-  } else if (hasSubs) {
-    checkbox.disabled = true;
-    checkbox.setAttribute("aria-label", "Completes when every subtask is ticked");
-  } else {
-    checkbox.setAttribute("aria-label", "Mark task as done");
-  }
+  checkbox.dataset.role = "main";
+  // Base role combined with the appointment lock (aria-label too)
+  applyMainCheckboxState(checkbox, task);
   checkbox.addEventListener("change", () => toggleTask(task.id));
 
   const main = document.createElement("div");
@@ -1105,6 +1277,19 @@ function renderTaskItem(task) {
     }
   }
 
+  // Appointment: same slot (mutually exclusive with the deadline),
+  // hidden when done or without a (valid) appointment
+  if (!task.done && task.appointment) {
+    const info = appointmentInfo(task.appointment);
+    if (info) {
+      const badge = document.createElement("span");
+      badge.className = "appointment-badge " + info.state;
+      badge.textContent = info.text;
+      badge.dataset.appointment = task.appointment; // for the 60s refresh
+      line.appendChild(badge);
+    }
+  }
+
   main.appendChild(line);
 
   if (hasSubs) {
@@ -1117,6 +1302,7 @@ function renderTaskItem(task) {
       const subCheck = document.createElement("input");
       subCheck.type = "checkbox";
       subCheck.checked = sub.done;
+      subCheck.disabled = locked; // future appointment locks subtasks
       subCheck.setAttribute("aria-label", `Subtask: ${sub.text}`);
       subCheck.addEventListener("change", () => toggleSubtask(task.id, sub.id));
 
@@ -1168,10 +1354,13 @@ categoriesBtn.addEventListener("click", openCategoriesModal);
 settingsBtn.addEventListener("click", openSettingsModal);
 
 // Reset cycle tasks that came due while the app was closed, then
-// keep checking (and refreshing countdowns) every minute
+// keep everything fresh every minute: cycle resets, badge texts,
+// and expired appointment locks (in place, no full render)
 resetDueCycles();
 render();
 setInterval(() => {
   resetDueCycles();
   refreshCountdowns();
+  refreshAppointments();
+  unlockExpiredAppointments();
 }, 60 * 1000);

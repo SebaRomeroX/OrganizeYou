@@ -269,6 +269,23 @@ h2 {
   border-color: var(--color-danger);
 }
 
+.appointment-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  background: var(--color-chip-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: 999px;
+}
+
+.appointment-badge.urgent {
+  color: var(--color-primary);
+  border-style: solid;
+  border-color: var(--color-primary);
+}
+
 .task-item input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
