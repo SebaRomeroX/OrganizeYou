@@ -328,6 +328,53 @@ Tasks:
 [x] 7. Regression: goal 7/8/9 harnesses + new countdown harness
 [x] 8. Review and commit
 
+ELEVENTH GOAL: APPOINTMENTS
+---------------------------
+Decisions:
+- Concept: an appointment is the mirror of a deadline - the task
+  must be completed AFTER that moment, so the task stays LOCKED
+  until then.
+- Data: task.appointment, same string forms as deadline (migration
+  adds appointment: null): "YYYY-MM-DD" (date-only) or
+  "YYYY-MM-DDTHH:mm" (timed). null = no appointment. Mutually
+  exclusive with task.deadline - a task has at most one of the two.
+- Lock: while now < appointment moment and the task is not done,
+  the main checkbox, the subtask checkboxes and counter clicks are
+  all disabled, with an explanatory aria-label. Unlock moment:
+  date-only = 00:00 of that day (the whole day is the appointment
+  day); timed = that exact moment. Editing/clearing the appointment
+  in the modal unlocks early. A cycling task that auto-resets
+  before its appointment locks again until the moment (accepted).
+- Modal: two blocks side by side (Deadline and Appointment, same
+  date + optional time inputs). Entering a date in one block
+  auto-clears the other block's inputs and state; a hint line says
+  they are mutually exclusive. Edit modal prefills the one in use.
+- Wording (appointmentInfo pure function -> { text, state }),
+  prefix "in" so the direction reads clearly: date-only:
+  "in 8 days" -> "in 1 day", then at 00:00 of that day the badge
+  becomes "now". Timed: "in 10 days" -> "in 1 day" (calendar) ->
+  "in 23 hours" ... "in 1 hour" -> "in 50 min" ... "in 10 min"
+  (10-minute floor), then at the moment "now". Once "now" it
+  STAYS "now" (urgent) while the task is undone - never
+  "overdue". Hidden when the task is done or no appointment.
+- Display: .appointment-badge in the same slot as the countdown
+  badge (after cycle and counter); since the two are mutually
+  exclusive only one can ever show.
+- Live updates: the existing 60s tick patches appointment badge
+  text/class in place, and flips checkboxes back to enabled when a
+  lock expires (no full re-render; full render only as fallback).
+
+Tasks:
+[ ] 1. Data: task.appointment + migration (appointment: null)
+[ ] 2. appointmentInfo() both modes (in N days/hours/10min, then sticky "now")
+[ ] 3. Mutual exclusion: modal blocks auto-clear each other + hint
+[ ] 4. Lock: main checkbox, subtasks, counter disabled before the moment
+[ ] 5. Appointment badge in task row + styles (normal/urgent "now")
+[ ] 6. 60s tick: patch badges and unlock expired locks in place
+[ ] 7. Edge cases (00:00 boundary, exact moment, done hides badge, cycle re-lock, invalid input -> null)
+[ ] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
+[ ] 9. Review and commit
+
 CHANGE LOG
 ----------
 - 2026-10-06: Project created, roadmap defined.
@@ -368,3 +415,4 @@ CHANGE LOG
 - 2026-10-06: Tenth goal reviewed and completed. All tasks done.
 - 2026-10-06: Adjustment (not a goal): ticking the main checkbox of a combined task (counter + subtasks) now completes it immediately and fills the counter to target; subtasks stay untouched, untick still resets everything.
 - 2026-10-06: Adjustment (not a goal): clicking a subtask of a combined task now counts "done again" - it stays checked and the counter grows (+1, capped at target); checked subtasks can't be unchecked anymore, only the main reset clears them. Subtask-only tasks keep the normal check/uncheck toggle.
+- 2026-10-07: Eleventh goal defined: appointments - task locked until a user-set date/time (date-only unlocks at 00:00 of that day), badge counts "in N days/hours/10 min" then sticks at "now"; mutually exclusive with deadlines (modal blocks auto-clear each other).
