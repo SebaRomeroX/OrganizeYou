@@ -794,21 +794,6 @@ function buildModes(state) {
       el.addEventListener("change", fn);
     };
 
-    // × button that removes a time field: clears both inputs and
-    // the state directly (no reliance on input events)
-    const clearBtn = (label, inputs, clear) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "icon-btn delete-btn";
-      btn.textContent = "×";
-      btn.setAttribute("aria-label", label);
-      btn.addEventListener("click", () => {
-        inputs.forEach((el) => (el.value = ""));
-        clear();
-      });
-      return btn;
-    };
-
     // --- Repeat ---
     const repeat = document.createElement("div");
     repeat.className = "mode-block";
@@ -935,47 +920,76 @@ function buildModes(state) {
     }
     block.appendChild(cyc);
 
-    // --- Deadline / Appointment (mutually exclusive) ---
-    // Built together so each side can clear the other's inputs
+    // --- Deadline / Appointment / Time since (on/off like the cycle) ---
+    // A toggle shows the block's inputs; unchecking clears the
+    // stored value (removed on save) and hides them again. Enabling
+    // prefills a default: today (the current minute for "since").
+    // Deadline and appointment exclude each other at the toggle
+    // level; "since" stays independent.
     const dl = document.createElement("div");
     dl.className = "mode-block";
 
     const dlHead = document.createElement("div");
     dlHead.className = "mode-head";
-    const dlTitle = document.createElement("span");
-    dlTitle.className = "mode-title";
-    dlTitle.textContent = "Deadline";
-    dlHead.appendChild(dlTitle);
 
-    const dlInputs = document.createElement("div");
-    dlInputs.className = "target-wrap deadline-wrap";
-
-    const dlDate = document.createElement("input");
-    dlDate.type = "date";
-    dlDate.className = "modal-input deadline-input";
-    dlDate.value = state.deadlineDate;
-    dlDate.setAttribute("aria-label", "Deadline date");
-
-    const dlTime = document.createElement("input");
-    dlTime.type = "time";
-    dlTime.className = "modal-input deadline-input";
-    dlTime.value = state.deadlineTime;
-    dlTime.setAttribute("aria-label", "Deadline time (optional)");
-
-    const dlClear = clearBtn("Remove deadline", [dlDate, dlTime], () => {
-      state.deadlineDate = "";
-      state.deadlineTime = "";
+    const dlLabel = document.createElement("label");
+    dlLabel.className = "mode-toggle deadline-toggle";
+    const dlToggle = document.createElement("input");
+    dlToggle.type = "checkbox";
+    dlToggle.checked = state.deadlineDate !== "";
+    dlToggle.addEventListener("change", () => {
+      if (dlToggle.checked) {
+        state.deadlineDate = nowStamp().slice(0, 10);
+        state.deadlineTime = "";
+        // Mutually exclusive with the appointment
+        state.appointmentDate = "";
+        state.appointmentTime = "";
+      } else {
+        state.deadlineDate = "";
+        state.deadlineTime = "";
+      }
+      Modal.refresh();
+      const again = document.querySelector(".deadline-toggle input");
+      if (again) again.focus();
     });
-
-    dlInputs.append(dlDate, dlTime, dlClear);
-    dlHead.appendChild(dlInputs);
+    const dlText = document.createElement("span");
+    dlText.textContent = "Deadline";
+    dlLabel.append(dlToggle, dlText);
+    dlHead.appendChild(dlLabel);
     dl.appendChild(dlHead);
 
-    const dlHelp = document.createElement("p");
-    dlHelp.className = "hint";
-    dlHelp.textContent =
-      "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes. Can\u2019t be combined with an appointment. Clear it with × to remove.";
-    dl.appendChild(dlHelp);
+    if (state.deadlineDate) {
+      const dlInputs = document.createElement("div");
+      dlInputs.className = "target-wrap deadline-wrap";
+
+      const dlDate = document.createElement("input");
+      dlDate.type = "date";
+      dlDate.className = "modal-input deadline-input";
+      dlDate.value = state.deadlineDate;
+      dlDate.setAttribute("aria-label", "Deadline date");
+
+      const dlTime = document.createElement("input");
+      dlTime.type = "time";
+      dlTime.className = "modal-input deadline-input";
+      dlTime.value = state.deadlineTime;
+      dlTime.setAttribute("aria-label", "Deadline time (optional)");
+
+      onEdit(dlDate, () => {
+        state.deadlineDate = dlDate.value;
+      });
+      onEdit(dlTime, () => {
+        state.deadlineTime = dlTime.value;
+      });
+
+      dlInputs.append(dlDate, dlTime);
+      dlHead.appendChild(dlInputs);
+
+      const dlHelp = document.createElement("p");
+      dlHelp.className = "hint";
+      dlHelp.textContent =
+        "No time set = counts to the end of that day. With a time it counts days, then hours, then 10 minutes. Can\u2019t be combined with an appointment. Uncheck to remove.";
+      dl.appendChild(dlHelp);
+    }
     block.appendChild(dl);
 
     const ap = document.createElement("div");
@@ -983,130 +997,144 @@ function buildModes(state) {
 
     const apHead = document.createElement("div");
     apHead.className = "mode-head";
-    const apTitle = document.createElement("span");
-    apTitle.className = "mode-title";
-    apTitle.textContent = "Appointment";
-    apHead.appendChild(apTitle);
 
-    const apInputs = document.createElement("div");
-    apInputs.className = "target-wrap deadline-wrap";
-
-    const apDate = document.createElement("input");
-    apDate.type = "date";
-    apDate.className = "modal-input deadline-input";
-    apDate.value = state.appointmentDate;
-    apDate.setAttribute("aria-label", "Appointment date");
-
-    const apTime = document.createElement("input");
-    apTime.type = "time";
-    apTime.className = "modal-input deadline-input";
-    apTime.value = state.appointmentTime;
-    apTime.setAttribute("aria-label", "Appointment time (optional)");
-
-    const apClear = clearBtn("Remove appointment", [apDate, apTime], () => {
-      state.appointmentDate = "";
-      state.appointmentTime = "";
-    });
-
-    apInputs.append(apDate, apTime, apClear);
-    apHead.appendChild(apInputs);
-    ap.appendChild(apHead);
-
-    const apHelp = document.createElement("p");
-    apHelp.className = "hint";
-    apHelp.textContent =
-      "The task stays locked until this moment (00:00 of the day without a time), then reads \u201cnow\u201d. Can\u2019t be combined with a deadline. Clear it with × to remove.";
-    ap.appendChild(apHelp);
-    block.appendChild(ap);
-
-    // Mutual exclusion: setting a date on one side clears the other
-    // (clearing only affects its own block)
-    onEdit(dlDate, () => {
-      state.deadlineDate = dlDate.value;
-      if (dlDate.value) {
-        state.appointmentDate = "";
+    const apLabel = document.createElement("label");
+    apLabel.className = "mode-toggle appointment-toggle";
+    const apToggle = document.createElement("input");
+    apToggle.type = "checkbox";
+    apToggle.checked = state.appointmentDate !== "";
+    apToggle.addEventListener("change", () => {
+      if (apToggle.checked) {
+        state.appointmentDate = nowStamp().slice(0, 10);
         state.appointmentTime = "";
-        apDate.value = "";
-        apTime.value = "";
-      }
-    });
-    onEdit(dlTime, () => {
-      state.deadlineTime = dlTime.value;
-    });
-    onEdit(apDate, () => {
-      state.appointmentDate = apDate.value;
-      if (apDate.value) {
+        // Mutually exclusive with the deadline
         state.deadlineDate = "";
         state.deadlineTime = "";
-        dlDate.value = "";
-        dlTime.value = "";
+      } else {
+        state.appointmentDate = "";
+        state.appointmentTime = "";
       }
+      Modal.refresh();
+      const again = document.querySelector(".appointment-toggle input");
+      if (again) again.focus();
     });
-    onEdit(apTime, () => {
-      state.appointmentTime = apTime.value;
-    });
+    const apText = document.createElement("span");
+    apText.textContent = "Appointment";
+    apLabel.append(apToggle, apText);
+    apHead.appendChild(apLabel);
+    ap.appendChild(apHead);
 
-    // --- Time since (independent of deadline/appointment) ---
+    if (state.appointmentDate) {
+      const apInputs = document.createElement("div");
+      apInputs.className = "target-wrap deadline-wrap";
+
+      const apDate = document.createElement("input");
+      apDate.type = "date";
+      apDate.className = "modal-input deadline-input";
+      apDate.value = state.appointmentDate;
+      apDate.setAttribute("aria-label", "Appointment date");
+
+      const apTime = document.createElement("input");
+      apTime.type = "time";
+      apTime.className = "modal-input deadline-input";
+      apTime.value = state.appointmentTime;
+      apTime.setAttribute("aria-label", "Appointment time (optional)");
+
+      onEdit(apDate, () => {
+        state.appointmentDate = apDate.value;
+      });
+      onEdit(apTime, () => {
+        state.appointmentTime = apTime.value;
+      });
+
+      apInputs.append(apDate, apTime);
+      apHead.appendChild(apInputs);
+
+      const apHelp = document.createElement("p");
+      apHelp.className = "hint";
+      apHelp.textContent =
+        "The task stays locked until this moment (00:00 of the day without a time), then reads \u201cnow\u201d. Can\u2019t be combined with a deadline. Uncheck to remove.";
+      ap.appendChild(apHelp);
+    }
+    block.appendChild(ap);
+
+    // Time since (independent of deadline/appointment)
     const sc = document.createElement("div");
     sc.className = "mode-block";
 
     const scHead = document.createElement("div");
     scHead.className = "mode-head";
-    const scTitle = document.createElement("span");
-    scTitle.className = "mode-title";
-    scTitle.textContent = "Time since";
-    scHead.appendChild(scTitle);
 
-    const scInputs = document.createElement("div");
-    scInputs.className = "target-wrap deadline-wrap";
-
-    const scDate = document.createElement("input");
-    scDate.type = "date";
-    scDate.className = "modal-input deadline-input";
-    scDate.value = state.sinceDate;
-    scDate.setAttribute("aria-label", "Last time date");
-
-    const scTime = document.createElement("input");
-    scTime.type = "time";
-    scTime.className = "modal-input deadline-input";
-    scTime.value = state.sinceTime;
-    scTime.setAttribute("aria-label", "Last time time (optional)");
-
-    const nowBtn = document.createElement("button");
-    nowBtn.type = "button";
-    nowBtn.className = "now-btn";
-    nowBtn.textContent = "Now";
-    nowBtn.setAttribute("aria-label", "Set the last time to now");
-    nowBtn.addEventListener("click", () => {
-      const stamp = nowStamp();
-      state.sinceDate = stamp.slice(0, 10);
-      state.sinceTime = stamp.slice(11);
-      scDate.value = state.sinceDate;
-      scTime.value = state.sinceTime;
+    const scLabel = document.createElement("label");
+    scLabel.className = "mode-toggle since-toggle";
+    const scToggle = document.createElement("input");
+    scToggle.type = "checkbox";
+    scToggle.checked = state.sinceDate !== "";
+    scToggle.addEventListener("change", () => {
+      if (scToggle.checked) {
+        const stamp = nowStamp();
+        state.sinceDate = stamp.slice(0, 10);
+        state.sinceTime = stamp.slice(11);
+      } else {
+        state.sinceDate = "";
+        state.sinceTime = "";
+      }
+      Modal.refresh();
+      const again = document.querySelector(".since-toggle input");
+      if (again) again.focus();
     });
-
-    const scClear = clearBtn("Remove time since", [scDate, scTime], () => {
-      state.sinceDate = "";
-      state.sinceTime = "";
-    });
-
-    scInputs.append(scDate, scTime, nowBtn, scClear);
-    scHead.appendChild(scInputs);
+    const scText = document.createElement("span");
+    scText.textContent = "Time since";
+    scLabel.append(scToggle, scText);
+    scHead.appendChild(scLabel);
     sc.appendChild(scHead);
 
-    const scHelp = document.createElement("p");
-    scHelp.className = "hint";
-    scHelp.textContent =
-      "Counts up from the last time you did this; completing the task resets it to now. No time set = starts at 00:00 of that day. Clear it with × to remove.";
-    sc.appendChild(scHelp);
-    block.appendChild(sc);
+    if (state.sinceDate) {
+      const scInputs = document.createElement("div");
+      scInputs.className = "target-wrap deadline-wrap";
 
-    onEdit(scDate, () => {
-      state.sinceDate = scDate.value;
-    });
-    onEdit(scTime, () => {
-      state.sinceTime = scTime.value;
-    });
+      const scDate = document.createElement("input");
+      scDate.type = "date";
+      scDate.className = "modal-input deadline-input";
+      scDate.value = state.sinceDate;
+      scDate.setAttribute("aria-label", "Last time date");
+
+      const scTime = document.createElement("input");
+      scTime.type = "time";
+      scTime.className = "modal-input deadline-input";
+      scTime.value = state.sinceTime;
+      scTime.setAttribute("aria-label", "Last time time (optional)");
+
+      const nowBtn = document.createElement("button");
+      nowBtn.type = "button";
+      nowBtn.className = "now-btn";
+      nowBtn.textContent = "Now";
+      nowBtn.setAttribute("aria-label", "Set the last time to now");
+      nowBtn.addEventListener("click", () => {
+        const stamp = nowStamp();
+        state.sinceDate = stamp.slice(0, 10);
+        state.sinceTime = stamp.slice(11);
+        scDate.value = state.sinceDate;
+        scTime.value = state.sinceTime;
+      });
+
+      onEdit(scDate, () => {
+        state.sinceDate = scDate.value;
+      });
+      onEdit(scTime, () => {
+        state.sinceTime = scTime.value;
+      });
+
+      scInputs.append(scDate, scTime, nowBtn);
+      scHead.appendChild(scInputs);
+
+      const scHelp = document.createElement("p");
+      scHelp.className = "hint";
+      scHelp.textContent =
+        "Counts up from the last time you did this; completing the task resets it to now. No time set = starts at 00:00 of that day. Uncheck to remove.";
+      sc.appendChild(scHelp);
+    }
+    block.appendChild(sc);
 
     // --- Subtasks ---
     const subs = document.createElement("div");
