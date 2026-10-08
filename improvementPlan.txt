@@ -1,0 +1,118 @@
+ORGANIZEYOU - PORTFOLIO IMPROVEMENT PLAN
+========================================
+
+WHY THIS FILE EXISTS
+--------------------
+Grade as an IT recruiter would: 5/10 as a portfolio piece, while the
+code itself deserves ~7/10. The gap is the story: the work is better
+than the packaging, and recruiters only see the packaging. This file
+lists every finding and the actions to close the gap. Target: 7.5-8/10.
+All decisions, changes and progress are registered in this file, same
+as the roadmap.
+
+CURRENT GRADE: 5/10 (code: 7/10)
+--------------------------------
+Signals a recruiter sees in the first 30 seconds:
+- README: MISSING - instant "incomplete" read, caps the grade alone.
+- Live demo: NONE (no GitHub Pages) - they won't clone + open
+  index.html to try it.
+- Screenshots/GIF: NONE - a to-do app with zero visuals looks like a
+  tutorial clone.
+- Repo description/topics: "organizer/reminder app", no tags - not
+  searchable, not contextualized.
+- LICENSE: MISSING - reads as "student project", blocks reuse.
+- Tests: NOT IN THE REPO - the roadmap claims Node test harnesses for
+  goals 8-14, but git ls-files shows only 5 files. Unverifiable claim
+  and it undermines the credibility of everything else.
+- CI: NONE - no GitHub Actions at all.
+
+What is genuinely strong (why the code gets a 7):
+- roadmap.txt: 14 goals with decisions, checklists and a changelog -
+  spec-driven discipline most junior devs cannot demonstrate.
+- Defensive data handling: every localStorage load normalizes/migrates
+  corrupt data; invalid entries are dropped instead of crashing.
+- Pure, testable functions: countdownInfo, appointmentInfo,
+  sinceInfo, doneCounts, dayStreak, nextCycleBoundary all take
+  (input, now) - designed for testing even though tests are missing.
+- Accessibility above average: role="dialog", aria-modal, aria-pressed
+  chips, state-explaining aria-labels, Escape/backdrop close, focus
+  restore, 44-48px touch targets, mobile-first.
+- XSS-safe by construction: user text always via textContent, never
+  innerHTML.
+- Comments explain WHY, not what (DST reasoning, streak rules).
+- 52 clean single-purpose commits, linear history, all pushed.
+
+What drags the grade down:
+1. app.js is 1,815 lines in the global scope - storage, domain
+   logic, cycle math, badge formatting, modal orchestration and
+   rendering interleaved. No modules, no 'use strict', no
+   package.json. A tech lead sees a monolith.
+2. Tests exist in the narrative but not in the repo (see above).
+3. Polish misses: goal 14 task 9 still unchecked though the commit
+   exists; no favicon / meta description / OG image; saveTasks() has
+   no try/catch (QuotaExceededError throws uncaught); the modal has
+   no focus trap (Tab leaves the dialog); the 60s setInterval is
+   never cleared.
+4. "Vanilla JS, no framework" is double-edged: half of recruiters
+   filter FOR React/Vue, the other half respect the fundamentals
+   argument - but nothing in the repo tells that story, so it reads
+   as a default instead of a decision.
+
+THE PLAN
+--------
+Phase 1 - Quick wins (half a day, 5 -> ~7):
+[ ] 1. README.md, the highest ROI file:
+      - one-line pitch
+      - animated GIF / screenshots of the dark UI
+      - feature list (cycles, streaks, appointments, deadlines,
+        subtasks, done counters)
+      - a "Why no framework?" section quoting the roadmap constraints
+      - how to run it
+      - architecture notes (file layout, pure functions, localStorage
+        schema + migrations)
+      - "what I'd do next"
+[ ] 2. Enable GitHub Pages (static app: one Settings toggle) and put
+      the live link at the top of the README.
+[ ] 3. Add LICENSE (MIT) + repo description + topics (todo,
+      vanilla-js, localStorage, accessibility, pwa-idea).
+[ ] 4. Commit the test harnesses already written (goals 8-14) under
+      tests/, runnable with `node --test` - zero dependencies, keeps
+      the "no external dependencies" constraint.
+[ ] 5. Check the last roadmap checkbox (goal 14, task 9) and fix any
+      other checklist inconsistency.
+
+Phase 2 - Structural (a few days, 7 -> 8):
+[ ] 6. Split app.js with native ES modules
+      (<script type="module">): storage.js, cycles.js, badges.js,
+      render.js, modals.js. No build step, the "no tools" philosophy
+      survives intact and the monolith criticism disappears.
+[ ] 7. Unit-test the pure functions properly: nextCycleBoundary (DST,
+      N>1 epoch phasing, anchor changes) and doneCounts/dayStreak -
+      date math deserves a table-driven suite. Best evidence of "I
+      write testable code".
+[ ] 8. CI workflow: lint (ESLint + Prettier) + node --test on every
+      push. Green badge in the README does real work with recruiters.
+[ ] 9. Robustness: try/catch around every saveTasks/saveCategories/
+      saveDoneLog/saveCycleAnchor; focus trap in modal.js (Tab cycles
+      inside the dialog); clear the 60s interval on page hide/unload;
+      add favicon, meta description and an OG image.
+
+Phase 3 - Differentiation (8 -> 9):
+[ ] 10. Make the process visible: rename roadmap.txt to
+      docs/ROADMAP.md (or link it) and add a short "How this project
+      evolved" section in the README pointing at the goal-by-goal
+      commits. The process narrative is the unfair advantage over a
+      prettier to-do app.
+[ ] 11. Optional: README badge row (CI status, license, demo link).
+
+GRADING TARGET
+--------------
+- Current: 5/10 portfolio (code 7/10).
+- After phase 1: ~7/10.
+- After phase 2: ~8/10.
+- Phase 3 polish: 7.5-8/10 defensible grade.
+
+CHANGE LOG
+----------
+- 2026-10-08: Improvement plan created from the recruiter-grade
+  analysis. No tasks done yet; start at Phase 1, task 1 (README).
