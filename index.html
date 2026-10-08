@@ -12,6 +12,15 @@
     <h1>OrganizeYou</h1>
     <p class="subtitle">Your to-do list</p>
 
+    <!-- Completed-tasks summary: today / week / month / year / total -->
+    <section class="stats-strip" aria-label="Tasks completed">
+      <div class="stat-cell"><span class="stat-num" data-stat="today">0</span><span class="stat-label">Today</span></div>
+      <div class="stat-cell"><span class="stat-num" data-stat="week">0</span><span class="stat-label">This week</span></div>
+      <div class="stat-cell"><span class="stat-num" data-stat="month">0</span><span class="stat-label">This month</span></div>
+      <div class="stat-cell"><span class="stat-num" data-stat="year">0</span><span class="stat-label">This year</span></div>
+      <div class="stat-cell"><span class="stat-num" data-stat="total">0</span><span class="stat-label">Total</span></div>
+    </section>
+
     <div class="actions">
       <button id="new-task-btn" class="action-btn primary" type="button">+ New task</button>
       <button id="categories-btn" class="action-btn" type="button">Categories <span class="btn-icon" aria-hidden="true">✎</span></button>

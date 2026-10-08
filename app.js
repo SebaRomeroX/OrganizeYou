@@ -3,6 +3,7 @@
 const TASKS_KEY = "organizeyou.tasks";
 const CATEGORIES_KEY = "organizeyou.categories";
 const CYCLE_ANCHOR_KEY = "organizeyou.cycleAnchor";
+const DONE_LOG_KEY = "organizeyou.doneLog";
 const CYCLE_UNITS = ["hour", "day", "week", "month"];
 
 // Global anchor for calendar cycles - must be ready before
@@ -17,6 +18,7 @@ const emptyState = document.getElementById("empty-state");
 
 let tasks = loadTasks();
 let categories = loadCategories();
+let doneLog = loadDoneLog();
 
 function loadTasks() {
   try {
@@ -96,6 +98,63 @@ function saveTasks() {
 
 function saveCategories() {
   localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+// Completion history for the done counter: [{ id, t }]. Validated
+// on load (broken entries dropped), default []
+function loadDoneLog() {
+  try {
+    const raw = localStorage.getItem(DONE_LOG_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((e) => e && typeof e.id === "string" && Number.isFinite(e.t));
+  } catch {
+    return [];
+  }
+}
+
+function saveDoneLog() {
+  localStorage.setItem(DONE_LOG_KEY, JSON.stringify(doneLog));
+}
+
+// Keep the done counter log in step with USER-driven transitions:
+// becoming done pushes an entry, undoing removes that task's most
+// recent one. Automatic cycle resets never call this - the
+// completion stands and the task simply restarts.
+function logDoneChange(id, done) {
+  if (done) {
+    doneLog.push({ id, t: Date.now() });
+  } else {
+    for (let i = doneLog.length - 1; i >= 0; i--) {
+      if (doneLog[i].id === id) {
+        doneLog.splice(i, 1);
+        break;
+      }
+    }
+  }
+  saveDoneLog();
+}
+
+// Pure counting of completions: today from local midnight, week
+// from the anchor's weekStartDay (0 = Sunday, default Monday),
+// month from the 1st, year from Jan 1, total = every entry
+function doneCounts(log = doneLog, now = new Date()) {
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - ((now.getDay() - cycleAnchor.weekStartDay + 7) % 7)
+  );
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const from = (start) => log.filter((e) => e.t >= start.getTime()).length;
+  return {
+    today: from(startOfDay),
+    week: from(weekStart),
+    month: from(monthStart),
+    year: from(yearStart),
+    total: log.length,
+  };
 }
 
 function makeId() {
@@ -1402,6 +1461,8 @@ function toggleTask(id) {
 
   // A completion stamps the "time since" record; resets keep it
   if (task.since != null && task.done && !wasDone) task.since = nowStamp();
+  // The done counter log follows user-driven transitions only
+  if (task.done !== wasDone) logDoneChange(task.id, task.done);
   syncCycleDue(task);
   saveTasks();
   render();
@@ -1432,6 +1493,9 @@ function toggleSubtask(taskId, subtaskId) {
     task.done = task.subtasks.length > 0 && task.subtasks.every((s) => s.done);
     if (task.since != null && task.done && !wasDone) task.since = nowStamp();
   }
+  // The done counter log follows user-driven transitions only
+  // (a "done again" click on an already-done task doesn't count)
+  if (task.done !== wasDone) logDoneChange(task.id, task.done);
   syncCycleDue(task);
   saveTasks();
   render();
@@ -1447,6 +1511,16 @@ function deleteTask(id) {
 
 function render() {
   renderTasks();
+  renderStats();
+}
+
+// Patch the five summary cells from the current counts
+function renderStats() {
+  const counts = doneCounts();
+  document.querySelectorAll("[data-stat]").forEach((el) => {
+    const value = counts[el.dataset.stat];
+    el.textContent = el.dataset.stat === "total" ? value.toLocaleString() : String(value);
+  });
 }
 
 function renderTasks() {
@@ -1637,8 +1711,9 @@ settingsBtn.addEventListener("click", openSettingsModal);
 
 // Schedule partial cycle tasks stuck from earlier versions, reset
 // cycle tasks that came due while the app was closed, then keep
-// everything fresh every minute: cycle resets, badge texts, and
-// expired appointment locks (in place, no full render)
+// everything fresh every minute: cycle resets, badge texts,
+// expired appointment locks (in place, no full render) and the
+// done counter (so "Today" rolls over at midnight)
 backfillPartialCycles();
 resetDueCycles();
 render();
@@ -1648,4 +1723,5 @@ setInterval(() => {
   refreshAppointments();
   refreshSinces();
   unlockExpiredAppointments();
+  renderStats();
 }, 60 * 1000);
