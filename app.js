@@ -75,7 +75,11 @@ function loadTasks() {
       // valid value or null - no exclusivity with the two above
       const since = validDue(t.since) ? t.since : null;
 
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, since, done };
+      // Streak (goal 14): non-negative integer, 0 = none yet.
+      // Hour cycles never count, but the field stays on the task
+      const streak = Number.isFinite(t.streak) && t.streak >= 1 ? Math.floor(t.streak) : 0;
+
+      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, since, streak, done };
     });
   } catch {
     return [];
@@ -155,6 +159,31 @@ function doneCounts(log = doneLog, now = new Date()) {
     year: from(yearStart),
     total: log.length,
   };
+}
+
+// Pure day streak: consecutive local days with at least one
+// completion, walked back from today - or from yesterday when
+// today has no entry yet (a streak is not dead until the day
+// ends). Plain calendar days, independent of the cycle anchor
+function dayStreak(log = doneLog, now = new Date()) {
+  const days = new Set(
+    log.map((e) => {
+      const d = new Date(e.t);
+      return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+    })
+  );
+  const key = (d) => d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+  let day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (!days.has(key(day))) {
+    day.setDate(day.getDate() - 1);
+    if (!days.has(key(day))) return 0;
+  }
+  let streak = 0;
+  while (days.has(key(day))) {
+    streak++;
+    day.setDate(day.getDate() - 1);
+  }
+  return streak;
 }
 
 function makeId() {
@@ -551,6 +580,15 @@ function syncCycleDue(task) {
   }
 }
 
+// Streak rule at a cycle boundary: completing every cycle keeps
+// the streak alive (+1), missing one breaks it (0). Automatic
+// only - user unticks and anchor changes never touch it. Hour
+// cycles are out of streak scope for now (their streak stays 0)
+function streakOnBoundary(task) {
+  if (!task.cycle || task.cycle.unit === "hour") return;
+  task.streak = task.done ? (task.streak || 0) + 1 : 0;
+}
+
 // Reset every cycle task whose time has come (progress cleared),
 // no matter whether it was completed or only partially started.
 // Returns true if anything changed.
@@ -559,6 +597,7 @@ function resetDueCycles() {
   let changed = false;
   tasks.forEach((t) => {
     if (t.cycle && t.cycle.dueAt != null && now >= t.cycle.dueAt) {
+      streakOnBoundary(t); // must see `done` before it is cleared
       t.done = false;
       if (t.repeats) t.repeats.current = 0;
       t.subtasks.forEach((s) => (s.done = false));
@@ -1424,6 +1463,7 @@ function addTask(text, tags = [], mode = {}) {
     deadline: mode.deadline || null,
     appointment: mode.appointment || null,
     since: mode.since || null,
+    streak: 0,
   });
   saveTasks();
   render();
@@ -1514,9 +1554,10 @@ function render() {
   renderStats();
 }
 
-// Patch the five summary cells from the current counts
+// Patch the summary cells from the current counts (the day
+// streak rides along - doneCounts stays completions-only)
 function renderStats() {
-  const counts = doneCounts();
+  const counts = { ...doneCounts(), streak: dayStreak() };
   document.querySelectorAll("[data-stat]").forEach((el) => {
     const value = counts[el.dataset.stat];
     el.textContent = el.dataset.stat === "total" ? value.toLocaleString() : String(value);
@@ -1636,6 +1677,15 @@ function renderTaskItem(task) {
     const badge = document.createElement("span");
     badge.className = "cycle-badge" + (task.done ? " complete" : "");
     badge.textContent = cycleLabel(task.cycle);
+    line.appendChild(badge);
+  }
+
+  // Streak: cycled tasks only (hour cycles out of scope),
+  // hidden while it is 0; fresh on every render
+  if (task.cycle && task.cycle.unit !== "hour" && task.streak >= 1) {
+    const badge = document.createElement("span");
+    badge.className = "streak-badge";
+    badge.textContent = "🔥 " + task.streak;
     line.appendChild(badge);
   }
 

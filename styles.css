@@ -17,6 +17,7 @@
   --color-danger: #f07178;
   --color-done: #7d8798;
   --color-success: #6fcf97;
+  --color-streak: #e8a33d;
   --color-border: #3a4150;
   --color-chip-bg: #343b4a;
   --color-shadow: rgba(0, 0, 0, 0.35);
@@ -346,6 +347,18 @@ h2 {
   color: var(--color-muted);
   background: var(--color-chip-bg);
   border: 1px dotted var(--color-border);
+  border-radius: 999px;
+}
+
+/* Streak (goal 14): day/week/month cycles, hidden while 0 */
+.streak-badge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-streak);
+  background: var(--color-chip-bg);
+  border: 1px solid var(--color-streak);
   border-radius: 999px;
 }
 

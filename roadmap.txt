@@ -499,14 +499,14 @@ Decisions:
   streak number; doneCounts() untouched.
 
 Tasks:
-[ ] 1. Data: streak field + migration (default 0)
-[ ] 2. streakOnBoundary() helper + hook in resetDueCycles (skip hour cycles, skip first-time scheduling)
-[ ] 3. Per-task streak badge in renderTaskItem + refreshStreaks() in the 60s tick
-[ ] 4. dayStreak(log, now) helper
-[ ] 5. Sixth stats-strip cell + renderStats streak (doneCounts untouched)
-[ ] 6. CSS: streak badge + strip grid with six cells
-[ ] 7. Edge cases (hours never count, late crossing counts once, anchor/untick untouched, today not dead yet)
-[ ] 8. Regression: new streak harness + all 8 existing harnesses
+[x] 1. Data: streak field + migration (default 0)
+[x] 2. streakOnBoundary() helper + hook in resetDueCycles (skip hour cycles, skip first-time scheduling)
+[x] 3. Per-task streak badge in renderTaskItem (no refreshStreaks() needed - boundary resets already re-render, so the badge is always fresh)
+[x] 4. dayStreak(log, now) helper
+[x] 5. Sixth stats-strip cell + renderStats streak (doneCounts untouched)
+[x] 6. CSS: streak badge + strip grid with six cells (auto-fit)
+[x] 7. Edge cases (hours never count, late crossing counts once, anchor/untick untouched, today not dead yet)
+[x] 8. Regression: new streak harness + all 8 existing harnesses
 [ ] 9. Review and commit
 
 CHANGE LOG
@@ -562,3 +562,4 @@ CHANGE LOG
 - 2026-10-07: Thirteenth goal implemented: doneLog completion history (validate on load, push on done transitions, pop on user undo only - cycle resets, done-again clicks and deletion never touch it), doneCounts() with today/week/month/year/total buckets (week starts on the anchor's weekStartDay), five-cell summary strip at the top of the page, rendered from render() and refreshed by the 60s tick.
 - 2026-10-07: Thirteenth goal reviewed and completed. All tasks done.
 - 2026-10-07: Adjustment (not a goal): the task list is split by state - category sections now show only pending tasks (creation order; goal 6's pending-first sort is replaced by the split itself) and a new "Done (N)" section at the end repeats the category grouping for completed tasks (multi-tagged done tasks repeat, Uncategorized done last inside it). Confirmed rule: subtasks are never separate Done entries - the task moves as one unit with its checklist exactly as it is.
+- 2026-10-07: Fourteenth goal implemented: task.streak with migration and streakOnBoundary() fired at real dueAt crossings from resetDueCycles (day/week/month only, hour cycles out of scope, automatic-only - unticks and anchor changes never touch it), hot streak badge next to the cycle badge (hidden at 0), dayStreak() derived from the doneLog as a sixth "Streak" strip cell. No refreshStreaks() was needed: boundary resets already re-render, so the badge is always fresh.
