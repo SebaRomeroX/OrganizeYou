@@ -459,7 +459,7 @@ Tasks:
 [x] 5. Wire into render() + 60s tick refresh (midnight rollover)
 [x] 6. Edge cases (undo without entry, cycle reset keeps, done-again not counted, deletion keeps)
 [x] 7. Regression: new counter harness + all 7 existing harnesses
-[ ] 8. Review and commit
+[x] 8. Review and commit
 
 CHANGE LOG
 ----------
@@ -512,3 +512,4 @@ CHANGE LOG
 - 2026-10-07: Adjustment (not a goal): Deadline, Appointment and Time since now follow the cycle on/off pattern in the modal - a toggle reveals the inputs, unchecking clears the value and hides them (replaces the × clear buttons); enabling prefills today (the current minute for time since), enabling one of the mutually exclusive pair unchecks the other, and hints end with "Uncheck to remove".
 - 2026-10-07: Thirteenth goal defined: tasks done counter - a summary strip at the top shows completions today / this week / this month / this year / total, backed by a doneLog of { id, t } entries pushed on every user-driven completion and removed again when the user undoes one (automatic cycle resets keep the entry).
 - 2026-10-07: Thirteenth goal implemented: doneLog completion history (validate on load, push on done transitions, pop on user undo only - cycle resets, done-again clicks and deletion never touch it), doneCounts() with today/week/month/year/total buckets (week starts on the anchor's weekStartDay), five-cell summary strip at the top of the page, rendered from render() and refreshed by the 60s tick.
+- 2026-10-07: Thirteenth goal reviewed and completed. All tasks done.
