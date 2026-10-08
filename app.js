@@ -1526,26 +1526,39 @@ function renderStats() {
 function renderTasks() {
   taskList.innerHTML = "";
 
-  // Display-only sort: pending first, done last (stable, so
-  // relative creation order is kept within each block)
-  const sorted = [...tasks].sort((a, b) => Number(a.done) - Number(b.done));
+  // Display-only split by state (replaces goal 6's pending-first
+  // sort): the category sections hold pending tasks, a Done
+  // section at the end repeats the grouping with the completed
+  // ones. Within a section tasks keep their creation order.
+  const pending = tasks.filter((t) => !t.done);
+  const done = tasks.filter((t) => t.done);
 
   // Groups: one per category in creation order, Uncategorized last
-  const groups = [];
-  categories.forEach((cat) => {
-    groups.push({
-      title: cat.name,
+  const buildGroups = (list) => {
+    const groups = [];
+    categories.forEach((cat) => {
       // Multi-tagged tasks repeat in each matching section
-      tasks: sorted.filter((t) => t.tags.includes(cat.id)),
-      categoryId: cat.id,
+      groups.push({
+        title: cat.name,
+        tasks: list.filter((t) => t.tags.includes(cat.id)),
+      });
     });
-  });
-  groups.push({
-    title: "Uncategorized",
-    tasks: sorted.filter((t) => t.tags.length === 0),
-  });
+    groups.push({
+      title: "Uncategorized",
+      tasks: list.filter((t) => t.tags.length === 0),
+    });
+    return groups;
+  };
 
-  groups.forEach((group) => {
+  const makeUl = (list) => {
+    const ul = document.createElement("ul");
+    ul.className = "group-tasks";
+    list.forEach((task) => ul.appendChild(renderTaskItem(task)));
+    return ul;
+  };
+
+  // Pending categories first (groups without pending tasks are skipped)
+  buildGroups(pending).forEach((group) => {
     if (group.tasks.length === 0) return;
 
     const section = document.createElement("section");
@@ -1555,13 +1568,38 @@ function renderTasks() {
     title.className = "group-title";
     title.textContent = group.title;
 
-    const ul = document.createElement("ul");
-    ul.className = "group-tasks";
-    group.tasks.forEach((task) => ul.appendChild(renderTaskItem(task)));
-
-    section.append(title, ul);
+    section.append(title, makeUl(group.tasks));
     taskList.appendChild(section);
   });
+
+  // Done section: the same grouping again, completed tasks only.
+  // Subtasks are never separate entries - the task moves here as
+  // one unit, with its checklist exactly as it is
+  if (done.length > 0) {
+    const wrap = document.createElement("section");
+    wrap.className = "task-group done-section";
+
+    const wrapTitle = document.createElement("h3");
+    wrapTitle.className = "group-title done-title";
+    wrapTitle.textContent = "Done (" + done.length + ")";
+    wrap.appendChild(wrapTitle);
+
+    buildGroups(done).forEach((group) => {
+      if (group.tasks.length === 0) return;
+
+      const sub = document.createElement("div");
+      sub.className = "done-group";
+
+      const title = document.createElement("h4");
+      title.className = "group-subtitle";
+      title.textContent = group.title;
+
+      sub.append(title, makeUl(group.tasks));
+      wrap.appendChild(sub);
+    });
+
+    taskList.appendChild(wrap);
+  }
 
   emptyState.classList.toggle("visible", tasks.length === 0);
 }
