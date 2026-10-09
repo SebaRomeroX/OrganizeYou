@@ -108,16 +108,28 @@ function loadDoneLog() {
   }
 }
 
+// One guarded write for every key: localStorage can throw
+// (quota exhausted, privacy mode, disabled storage). A failed
+// write must not break the interaction the user just performed -
+// the in-memory store is already updated, so we warn and move on.
+function persist(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn("OrganizeYou: could not persist " + key, err);
+  }
+}
+
 export function saveTasks() {
-  localStorage.setItem(TASKS_KEY, JSON.stringify(store.tasks));
+  persist(TASKS_KEY, store.tasks);
 }
 
 export function saveCategories() {
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(store.categories));
+  persist(CATEGORIES_KEY, store.categories);
 }
 
 export function saveDoneLog() {
-  localStorage.setItem(DONE_LOG_KEY, JSON.stringify(store.doneLog));
+  persist(DONE_LOG_KEY, store.doneLog);
 }
 
 // Keep the done counter log in step with USER-driven transitions:
@@ -154,7 +166,7 @@ export function loadCycleAnchor() {
 }
 
 export function saveCycleAnchor() {
-  localStorage.setItem(CYCLE_ANCHOR_KEY, JSON.stringify(store.cycleAnchor));
+  persist(CYCLE_ANCHOR_KEY, store.cycleAnchor);
 }
 
 // Read everything from localStorage into the store. The anchor is

@@ -46,11 +46,40 @@ backfillPartialCycles();
 resetDueCycles();
 render();
 
-setInterval(() => {
+// Refresh cycle every minute while the page is visible. A hidden
+// tab throttles timers anyway, so the ticker stops on
+// visibilitychange/pagehide and restarts with an immediate refresh
+// when the page becomes visible again - a cycle that came due
+// while hidden resets right away instead of waiting a minute.
+const TICK_MS = 60 * 1000;
+
+function tick() {
   if (resetDueCycles()) render();
   refreshCountdowns();
   refreshAppointments();
   refreshSinces();
   unlockExpiredAppointments();
   renderStats();
-}, 60 * 1000);
+}
+
+let ticker = setInterval(tick, TICK_MS);
+
+function pauseTicker() {
+  if (ticker != null) {
+    clearInterval(ticker);
+    ticker = null;
+  }
+}
+
+function resumeTicker() {
+  if (ticker == null) {
+    tick();
+    ticker = setInterval(tick, TICK_MS);
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pauseTicker();
+  else resumeTicker();
+});
+window.addEventListener("pagehide", pauseTicker);

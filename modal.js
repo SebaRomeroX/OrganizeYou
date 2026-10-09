@@ -112,6 +112,36 @@ export const Modal = (() => {
     if (e.key === "Escape") close();
   });
 
+  // Focus trap: while the dialog is open, Tab and Shift+Tab cycle
+  // through its controls instead of walking the page behind the
+  // backdrop (aria-modal promises that, and screen-reader users
+  // rely on it). Unwired implicitly by the "open" guard, so a
+  // closed dialog never intercepts Tab.
+  const FOCUSABLE =
+    "a[href], button:not([disabled]), input:not([disabled]), " +
+    'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || !backdrop.classList.contains("open")) return;
+    // Visible focusables only: hidden extras (collapsed modes) don't count
+    const nodes = [...dialog.querySelectorAll(FOCUSABLE)].filter(
+      (el) => el.getClientRects().length > 0
+    );
+    if (nodes.length === 0) return;
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    const active = document.activeElement;
+    const outside = !dialog.contains(active);
+
+    if (e.shiftKey && (active === first || outside)) {
+      e.preventDefault(); // wrap backwards to the last control
+      last.focus();
+    } else if (!e.shiftKey && (active === last || outside)) {
+      e.preventDefault(); // wrap forwards to the first control
+      first.focus();
+    }
+  });
+
   // Submit
   form.addEventListener("submit", (e) => {
     e.preventDefault();
