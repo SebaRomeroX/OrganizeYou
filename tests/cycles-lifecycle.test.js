@@ -243,3 +243,53 @@ describe("app left open across boundaries", () => {
     assert.ok(t.subtasks.every((s) => !s.done));
   });
 });
+
+describe("legacy states from earlier versions", () => {
+  // KNOWN-RED repro (fixed in a later commit): backfillPartialCycles
+  // currently schedules orphan progress at the NEXT boundary instead
+  // of clearing it now, so main looks restarted while the subtasks
+  // stay ticked for the rest of the day.
+  it("resets orphan progress (ticked subtasks, no dueAt) immediately on load", () => {
+    // Pre-cycle-engine versions saved partial tasks WITHOUT a
+    // deadline: done=false, counter>0, subtasks ticked, dueAt null.
+    // No boundary was ever attached to that progress, so it must be
+    // cleaned on sight at load - not scheduled a cycle ahead.
+    globalThis.localStorage.setItem(
+      "organizeyou.tasks",
+      JSON.stringify([
+        {
+          id: "legacy1",
+          text: "legacy",
+          done: false,
+          tags: [],
+          repeats: { current: 2, target: 4 },
+          subtasks: [
+            { id: "a", text: "a", done: true },
+            { id: "b", text: "b", done: true },
+            { id: "c", text: "c", done: false },
+            { id: "d", text: "d", done: false },
+          ],
+          cycle: { every: 1, unit: "day", dueAt: null },
+          deadline: null,
+          appointment: null,
+          since: null,
+          streak: 0,
+        },
+      ])
+    );
+
+    // The app.js boot sequence
+    storage.hydrate();
+    cycles.backfillPartialCycles();
+    cycles.resetDueCycles();
+
+    const t = store.tasks[0];
+    assert.equal(t.done, false);
+    assert.equal(t.repeats.current, 0, "orphan counter cleared at load");
+    assert.ok(
+      t.subtasks.every((s) => !s.done),
+      "orphan subtask ticks cleared at load"
+    );
+    assert.equal(t.cycle.dueAt, null);
+  });
+});
