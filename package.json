@@ -5,7 +5,7 @@
   "description": "To-do list with categories, recurring cycles, streaks, deadlines and appointments - vanilla JS, no build step",
   "type": "module",
   "scripts": {
-    "test": "node --test \"tests/**/*.test.js\"",
+    "test": "node --test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
