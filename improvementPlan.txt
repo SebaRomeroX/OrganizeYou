@@ -10,7 +10,7 @@ lists every finding and the actions to close the gap. Target: 7.5-8/10.
 All decisions, changes and progress are registered in this file, same
 as the roadmap.
 
-CURRENT GRADE: 5/10 (code: 7/10)
+CURRENT GRADE: 5/10 (code: 7/10)  ->  ~7/10 after Phase 1 (2026-10-08)
 --------------------------------
 Signals a recruiter sees in the first 30 seconds:
 - README: MISSING - instant "incomplete" read, caps the grade alone.
@@ -60,10 +60,11 @@ What drags the grade down:
 
 THE PLAN
 --------
-Phase 1 - Quick wins (half a day, 5 -> ~7):
-[ ] 1. README.md, the highest ROI file:
+Phase 1 - Quick wins (half a day, 5 -> ~7):  [DONE 2026-10-08]
+[x] 1. README.md, the highest ROI file:
       - one-line pitch
-      - animated GIF / screenshots of the dark UI
+      - animated GIF / screenshots of the dark UI (3 PNGs:
+        desktop full page, 390px mobile, New task modal)
       - feature list (cycles, streaks, appointments, deadlines,
         subtasks, done counters)
       - a "Why no framework?" section quoting the roadmap constraints
@@ -71,15 +72,24 @@ Phase 1 - Quick wins (half a day, 5 -> ~7):
       - architecture notes (file layout, pure functions, localStorage
         schema + migrations)
       - "what I'd do next"
-[ ] 2. Enable GitHub Pages (static app: one Settings toggle) and put
-      the live link at the top of the README.
-[ ] 3. Add LICENSE (MIT) + repo description + topics (todo,
-      vanilla-js, localStorage, accessibility, pwa-idea).
-[ ] 4. Commit the test harnesses already written (goals 8-14) under
+[x] 2. Enable GitHub Pages (static app: one Settings toggle) and put
+      the live link at the top of the README. CORRECTION: Pages was
+      already enabled and building from main - verified HTTP 200 on
+      https://sebaromerox.github.io/OrganizeYou/ instead of toggling.
+[x] 3. Add LICENSE (MIT) + repo description + topics (todo,
+      vanilla-js, localStorage, accessibility, pwa-idea + extra
+      no-framework, to-do-app - set via gh repo edit).
+[x] 4. Commit the test harnesses already written (goals 8-14) under
       tests/, runnable with `node --test` - zero dependencies, keeps
-      the "no external dependencies" constraint.
-[ ] 5. Check the last roadmap checkbox (goal 14, task 9) and fix any
-      other checklist inconsistency.
+      the "no external dependencies" constraint. CORRECTION: the
+      harnesses were NEVER written (not on disk, not in git history)
+      - they were written from scratch this session: logic.js holds
+      the 17 pure functions extracted verbatim from app.js, and
+      tests/ has 5 suites (62 tests) over cycle math incl. DST,
+      the three badge ladders, counters and streaks. `npm test`.
+[x] 5. Check the last roadmap checkbox (goal 14, task 9) and fix any
+      other checklist inconsistency (added the missing "Fourteenth
+      goal defined" and "reviewed" changelog lines).
 
 Phase 2 - Structural (a few days, 7 -> 8):
 [ ] 6. Split app.js with native ES modules
@@ -108,7 +118,7 @@ Phase 3 - Differentiation (8 -> 9):
 GRADING TARGET
 --------------
 - Current: 5/10 portfolio (code 7/10).
-- After phase 1: ~7/10.
+- After phase 1: ~7/10.  [REACHED 2026-10-08]
 - After phase 2: ~8/10.
 - Phase 3 polish: 7.5-8/10 defensible grade.
 
@@ -116,3 +126,27 @@ CHANGE LOG
 ----------
 - 2026-10-08: Improvement plan created from the recruiter-grade
   analysis. No tasks done yet; start at Phase 1, task 1 (README).
+- 2026-10-08: Phase 1 complete - all 5 tasks done, 6 commits (local
+  only, NOT pushed): Add MIT license / Mark goal 14 reviewed and
+  committed / Extract pure functions into logic.js / Add unit tests
+  with node --test / Add README with demo, screenshots and tests /
+  this update.
+  Two plan corrections found while executing:
+  - task 2: GitHub Pages was already enabled (verified 200 + built),
+    only the description/topics were missing;
+  - task 4: the "harnesses already written (goals 8-14)" never
+    existed anywhere - roadmap goals 8-14 shipped with unchecked
+    harness claims. Rewritten from scratch instead: app.js lost its
+    17 pure functions to logic.js (1,815 -> 1,499 lines), tests/
+    covers the roadmap's stated cases (goal 8 hour/DST math, goal 9
+    anchor variants + strictly-after, goals 10-12 ladders and their
+    boundaries, goal 13 weekStartDay buckets, goal 14 streak rules):
+    62 tests, `npm test`, zero dependencies.
+  GitHub-side (not in the repo): description set, 7 topics added,
+  Pages confirmed live. Screenshots: 3 PNGs in docs/screenshots/
+  captured with headless Chromium + seeded localStorage, which
+  doubled as a smoke test - zero console errors with the extracted
+  logic.js, app behavior unchanged (9 rendered items for 8 tasks is
+  the intended multi-tag duplication).
+  Grade after Phase 1: ~7/10. Phase 2 (ES modules, CI, focus trap,
+  save try/catch) remains open.
