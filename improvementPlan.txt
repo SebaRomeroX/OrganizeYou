@@ -28,7 +28,7 @@ Signals a recruiter sees in the first 30 seconds:
 - CI: NONE - no GitHub Actions at all.
 
 What is genuinely strong (why the code gets a 7):
-- roadmap.txt: 14 goals with decisions, checklists and a changelog -
+- docs/ROADMAP.md: 14 goals with decisions, checklists and a changelog -
   spec-driven discipline most junior devs cannot demonstrate.
 - Defensive data handling: every localStorage load normalizes/migrates
   corrupt data; invalid entries are dropped instead of crashing.

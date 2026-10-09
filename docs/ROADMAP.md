@@ -34,16 +34,16 @@ PROJECT GUIDANCE
 FIRST GOAL: TO-DO LIST
 ----------------------
 Tasks:
-[x] 1. Project setup: git init, base file structure (index.html, styles.css, app.js)
-[x] 2. Static layout: input field, "Add" button, task list
-[x] 3. Add a task from the input
-[x] 4. Display tasks in the list
-[x] 5. Mark a task as done (checkbox / strikethrough)
-[x] 6. Delete a task
-[x] 7. Persist tasks in localStorage (load on page start)
-[x] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
-[x] 9. Empty-state message when there are no tasks
-[x] 10. Final review and commit
+- [x] 1. Project setup: git init, base file structure (index.html, styles.css, app.js)
+- [x] 2. Static layout: input field, "Add" button, task list
+- [x] 3. Add a task from the input
+- [x] 4. Display tasks in the list
+- [x] 5. Mark a task as done (checkbox / strikethrough)
+- [x] 6. Delete a task
+- [x] 7. Persist tasks in localStorage (load on page start)
+- [x] 8. Styling: mobile-first, clean and responsive (min-width breakpoints, touch-friendly targets)
+- [x] 9. Empty-state message when there are no tasks
+- [x] 10. Final review and commit
 
 SECOND GOAL: CATEGORIES & TAGS
 ------------------------------
@@ -65,14 +65,14 @@ Decisions:
 - Categories cannot be reordered yet (creation order).
 
 Tasks:
-[x] 1. Category CRUD: create/delete, persist in localStorage
-[x] 2. Task data model: tags field + migration for existing tasks
-[x] 3. Grouped list: sections per category + Uncategorized, multi-tag repeat
-[x] 4. Tag picker: + button with inline toggle chips
-[x] 5. Deleting a category removes it from all tasks
-[x] 6. Empty states (no categories / no tasks)
-[x] 7. Mobile-first styling for sections, chips and picker
-[x] 8. Review and commit
+- [x] 1. Category CRUD: create/delete, persist in localStorage
+- [x] 2. Task data model: tags field + migration for existing tasks
+- [x] 3. Grouped list: sections per category + Uncategorized, multi-tag repeat
+- [x] 4. Tag picker: + button with inline toggle chips
+- [x] 5. Deleting a category removes it from all tasks
+- [x] 6. Empty states (no categories / no tasks)
+- [x] 7. Mobile-first styling for sections, chips and picker
+- [x] 8. Review and commit
 
 THIRD GOAL: REUSABLE MODAL
 --------------------------
@@ -96,14 +96,14 @@ Decisions:
 - Mobile: bottom sheet style; min-width 600px: centered dialog.
 
 Tasks:
-[x] 1. Modal component: markup, open/close (X, backdrop, Escape), focus handling
-[x] 2. Modal styles: mobile sheet -> centered dialog, dark theme
-[x] 3. "New task" button -> modal creates task
-[x] 4. "New category" button -> modal creates category
-[x] 5. Edit task: pencil button -> modal renames task + toggles tags
-[x] 6. Remove inline forms and inline tag picker
-[x] 7. Empty states and edge cases (empty text rejected, Escape does not save)
-[x] 8. Review and commit
+- [x] 1. Modal component: markup, open/close (X, backdrop, Escape), focus handling
+- [x] 2. Modal styles: mobile sheet -> centered dialog, dark theme
+- [x] 3. "New task" button -> modal creates task
+- [x] 4. "New category" button -> modal creates category
+- [x] 5. Edit task: pencil button -> modal renames task + toggles tags
+- [x] 6. Remove inline forms and inline tag picker
+- [x] 7. Empty states and edge cases (empty text rejected, Escape does not save)
+- [x] 8. Review and commit
 
 FOURTH GOAL: REPETITIONS & SUBTASKS
 ------------------------------------
@@ -123,14 +123,14 @@ Decisions:
   repeats: null, subtasks: [].
 
 Tasks:
-[x] 1. Data model: repeats + subtasks fields, migration for existing tasks
-[x] 2. Repetition logic: increment/decrement, auto-complete at target, reset-to-0 on untick of done
-[x] 3. Subtask logic: per-subtask toggle, auto-complete when all ticked, disabled main checkbox
-[x] 4. Task row UI: counter badge, subtask checklist rendering
-[x] 5. Modal: repeat toggle + target input (new & edit)
-[x] 6. Modal: dynamic subtask rows (add/remove, min 1) with mode exclusivity
-[x] 7. Edge cases (clamping, empty subtasks, migration)
-[x] 8. Review and commit
+- [x] 1. Data model: repeats + subtasks fields, migration for existing tasks
+- [x] 2. Repetition logic: increment/decrement, auto-complete at target, reset-to-0 on untick of done
+- [x] 3. Subtask logic: per-subtask toggle, auto-complete when all ticked, disabled main checkbox
+- [x] 4. Task row UI: counter badge, subtask checklist rendering
+- [x] 5. Modal: repeat toggle + target input (new & edit)
+- [x] 6. Modal: dynamic subtask rows (add/remove, min 1) with mode exclusivity
+- [x] 7. Edge cases (clamping, empty subtasks, migration)
+- [x] 8. Review and commit
 
 FIFTH GOAL: CYCLES (RECURRING TASKS)
 ------------------------------------
@@ -157,14 +157,14 @@ Decisions:
   it does not touch the repeat/subtask controls.
 
 Tasks:
-[x] 1. Data model: cycle field + migration for existing tasks
-[x] 2. Calendar boundary helpers (hour/day/week/month, N>1 anchors)
-[x] 3. dueAt on completion (tick, counter target, subtasks) + clear on untick
-[x] 4. Reset engine: on load + every 60s while open
-[x] 5. Modal: cycle toggle + every/unit controls (new & edit)
-[x] 6. Task row: cycle badge
-[x] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
-[x] 8. Review and commit
+- [x] 1. Data model: cycle field + migration for existing tasks
+- [x] 2. Calendar boundary helpers (hour/day/week/month, N>1 anchors)
+- [x] 3. dueAt on completion (tick, counter target, subtasks) + clear on untick
+- [x] 4. Reset engine: on load + every 60s while open
+- [x] 5. Modal: cycle toggle + every/unit controls (new & edit)
+- [x] 6. Task row: cycle badge
+- [x] 7. Edge cases (exact-boundary completion, cycle edit while done, migration)
+- [x] 8. Review and commit
 
 SIXTH GOAL: DISPLAY ORDER (PENDING FIRST)
 -----------------------------------------
@@ -182,11 +182,11 @@ Decisions:
   reset already trigger render(), which re-sorts.
 
 Tasks:
-[x] 1. Sort pending-first in renderTasks (one sorted copy, filter groups from it)
-[x] 2. Verify: tick moves down, untick moves up, cycle auto-reset moves up
-[x] 3. Multi-tag consistency across sections + done styling unaffected
-[x] 4. Edge cases (empty groups, all-done list, subtask/counter tasks)
-[x] 5. Review and commit
+- [x] 1. Sort pending-first in renderTasks (one sorted copy, filter groups from it)
+- [x] 2. Verify: tick moves down, untick moves up, cycle auto-reset moves up
+- [x] 3. Multi-tag consistency across sections + done styling unaffected
+- [x] 4. Edge cases (empty groups, all-done list, subtask/counter tasks)
+- [x] 5. Review and commit
 
 SEVENTH GOAL: COMBINED COUNTER + SUBTASKS
 -----------------------------------------
@@ -214,13 +214,13 @@ Decisions:
   first, then cycle badge, then counter badge).
 
 Tasks:
-[x] 1. Remove exclusivity: modesToData returns both, repeat toggle keeps subtasks, Add subtask keeps repeat
-[x] 2. toggleSubtask: increment counter (capped), combined completion rule, untick does not decrement
-[x] 3. Main checkbox: click-to-add while active, full reset on untick-done
-[x] 4. Modal auto-sync: target = subtask count on add/remove, manual edit wins
-[x] 5. Reset paths: untick-done and cycle reset clear counter + subtasks
-[x] 6. Edge cases (target clamping, badge + checklist together, single-mode unchanged)
-[x] 7. Review and commit
+- [x] 1. Remove exclusivity: modesToData returns both, repeat toggle keeps subtasks, Add subtask keeps repeat
+- [x] 2. toggleSubtask: increment counter (capped), combined completion rule, untick does not decrement
+- [x] 3. Main checkbox: click-to-add while active, full reset on untick-done
+- [x] 4. Modal auto-sync: target = subtask count on add/remove, manual edit wins
+- [x] 5. Reset paths: untick-done and cycle reset clear counter + subtasks
+- [x] 6. Edge cases (target clamping, badge + checklist together, single-mode unchanged)
+- [x] 7. Review and commit
 
 EIGHTH GOAL: CYCLE TIMING (HOURS ELAPSED)
 -----------------------------------------
@@ -243,12 +243,12 @@ Decisions:
   hour math.
 
 Tasks:
-[x] 1. nextCycleBoundary hour branch: elapsed from the completion moment
-[x] 2. Update doc comments (hours no longer anchored to local midnight)
-[x] 3. Verify callers: syncCycleDue, edit-submit recompute, migration fallback, resetDueCycles
-[x] 4. Edge cases (crossing midnight, DST true elapsed, old stored dueAts still fire)
-[x] 5. Update the Node test harness hour cases (10:30 + 2h -> 12:30, 23:30 + 2h -> 01:30, +1h, +24h)
-[x] 6. Review and commit
+- [x] 1. nextCycleBoundary hour branch: elapsed from the completion moment
+- [x] 2. Update doc comments (hours no longer anchored to local midnight)
+- [x] 3. Verify callers: syncCycleDue, edit-submit recompute, migration fallback, resetDueCycles
+- [x] 4. Edge cases (crossing midnight, DST true elapsed, old stored dueAts still fire)
+- [x] 5. Update the Node test harness hour cases (10:30 + 2h -> 12:30, 23:30 + 2h -> 01:30, +1h, +24h)
+- [x] 6. Review and commit
 
 NINTH GOAL: CYCLE RESET ANCHOR (GLOBAL)
 ---------------------------------------
@@ -282,13 +282,13 @@ Decisions:
   month.
 
 Tasks:
-[x] 1. Setting: load/normalize/save cycleAnchor with defaults
-[x] 2. nextCycleBoundary: anchor-aware day/week/month (hour untouched)
-[x] 3. Settings modal + header button + four labeled controls
-[x] 4. Save: recompute pending dueAts + immediate reset check
-[x] 5. Edge cases (strictly-after at exact anchor, 1-28 cap, DST time, invalid settings)
-[x] 6. Regression: goal-8 harness passes with defaults + new anchor cases
-[x] 7. Review and commit
+- [x] 1. Setting: load/normalize/save cycleAnchor with defaults
+- [x] 2. nextCycleBoundary: anchor-aware day/week/month (hour untouched)
+- [x] 3. Settings modal + header button + four labeled controls
+- [x] 4. Save: recompute pending dueAts + immediate reset check
+- [x] 5. Edge cases (strictly-after at exact anchor, 1-28 cap, DST time, invalid settings)
+- [x] 6. Regression: goal-8 harness passes with defaults + new anchor cases
+- [x] 7. Review and commit
 
 TENTH GOAL: DEADLINE COUNTDOWN
 -------------------------------
@@ -319,14 +319,14 @@ Decisions:
   deadline shows overdue until the user edits it.
 
 Tasks:
-[x] 1. Data: task.deadline + migration (deadline: null)
-[x] 2. countdownInfo(deadline) for both modes (days/today/hours/10min/overdue)
-[x] 3. Modal deadline block (date + optional time), new + edit + clear
-[x] 4. Countdown badge in task row + styles (normal/urgent/overdue)
-[x] 5. 60s tick: re-patch badges without full re-render
-[x] 6. Edge cases (date-only today, exact boundaries, past/invalid input, done hides badge)
-[x] 7. Regression: goal 7/8/9 harnesses + new countdown harness
-[x] 8. Review and commit
+- [x] 1. Data: task.deadline + migration (deadline: null)
+- [x] 2. countdownInfo(deadline) for both modes (days/today/hours/10min/overdue)
+- [x] 3. Modal deadline block (date + optional time), new + edit + clear
+- [x] 4. Countdown badge in task row + styles (normal/urgent/overdue)
+- [x] 5. 60s tick: re-patch badges without full re-render
+- [x] 6. Edge cases (date-only today, exact boundaries, past/invalid input, done hides badge)
+- [x] 7. Regression: goal 7/8/9 harnesses + new countdown harness
+- [x] 8. Review and commit
 
 ELEVENTH GOAL: APPOINTMENTS
 ---------------------------
@@ -365,15 +365,15 @@ Decisions:
   lock expires (no full re-render; full render only as fallback).
 
 Tasks:
-[x] 1. Data: task.appointment + migration (appointment: null)
-[x] 2. appointmentInfo() both modes (in N days/hours/10min, then sticky "now")
-[x] 3. Mutual exclusion: modal blocks auto-clear each other + hint
-[x] 4. Lock: main checkbox, subtasks, counter disabled before the moment
-[x] 5. Appointment badge in task row + styles (normal/urgent "now")
-[x] 6. 60s tick: patch badges and unlock expired locks in place
-[x] 7. Edge cases (00:00 boundary, exact moment, done hides badge, cycle re-lock, invalid input -> null)
-[x] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
-[x] 9. Review and commit
+- [x] 1. Data: task.appointment + migration (appointment: null)
+- [x] 2. appointmentInfo() both modes (in N days/hours/10min, then sticky "now")
+- [x] 3. Mutual exclusion: modal blocks auto-clear each other + hint
+- [x] 4. Lock: main checkbox, subtasks, counter disabled before the moment
+- [x] 5. Appointment badge in task row + styles (normal/urgent "now")
+- [x] 6. 60s tick: patch badges and unlock expired locks in place
+- [x] 7. Edge cases (00:00 boundary, exact moment, done hides badge, cycle re-lock, invalid input -> null)
+- [x] 8. Regression: countdown + goal 7/8/9 harnesses + new appointment harness
+- [x] 9. Review and commit
 
 TWELFTH GOAL: TIME SINCE
 -------------------------
@@ -409,15 +409,15 @@ Decisions:
   badge text in place via dataset.since (no full re-render).
 
 Tasks:
-[x] 1. Data: task.since + migration (since: null, validDue reused)
-[x] 2. sinceMoment() + sinceInfo() ladder (just now / 10 min / hours / days / weeks / months)
-[x] 3. Completion hooks: toggleTask/toggleSubtask set since = now on completion events only
-[x] 4. Modal "Time since" block: date + time + Now button, hint, edit prefill, clear = off
-[x] 5. .since-badge always visible (done too) + neutral styles
-[x] 6. 60s tick: refreshSinces() in-place patch
-[x] 7. Edge cases (invalid -> null, date-only 00:00, untick/cycle keep record, future clamps to "just now")
-[x] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
-[x] 9. Review and commit
+- [x] 1. Data: task.since + migration (since: null, validDue reused)
+- [x] 2. sinceMoment() + sinceInfo() ladder (just now / 10 min / hours / days / weeks / months)
+- [x] 3. Completion hooks: toggleTask/toggleSubtask set since = now on completion events only
+- [x] 4. Modal "Time since" block: date + time + Now button, hint, edit prefill, clear = off
+- [x] 5. .since-badge always visible (done too) + neutral styles
+- [x] 6. 60s tick: refreshSinces() in-place patch
+- [x] 7. Edge cases (invalid -> null, date-only 00:00, untick/cycle keep record, future clamps to "just now")
+- [x] 8. Regression: new since harness + countdown/appointment/main_tick harnesses
+- [x] 9. Review and commit
 
 THIRTEENTH GOAL: TASKS DONE COUNTER
 -----------------------------------
@@ -452,14 +452,14 @@ Decisions:
   re-renders it so "Today" rolls over at midnight.
 
 Tasks:
-[x] 1. Data: doneLog key + load/normalize on start (default [])
-[x] 2. Log hooks: push on done transitions, pop on user undo (toggleTask/toggleSubtask)
-[x] 3. doneCounts(log, now): today/week/month/year/total (weekStartDay aware)
-[x] 4. UI: summary strip in index.html + styles.css (five cells, dark theme)
-[x] 5. Wire into render() + 60s tick refresh (midnight rollover)
-[x] 6. Edge cases (undo without entry, cycle reset keeps, done-again not counted, deletion keeps)
-[x] 7. Regression: new counter harness + all 7 existing harnesses
-[x] 8. Review and commit
+- [x] 1. Data: doneLog key + load/normalize on start (default [])
+- [x] 2. Log hooks: push on done transitions, pop on user undo (toggleTask/toggleSubtask)
+- [x] 3. doneCounts(log, now): today/week/month/year/total (weekStartDay aware)
+- [x] 4. UI: summary strip in index.html + styles.css (five cells, dark theme)
+- [x] 5. Wire into render() + 60s tick refresh (midnight rollover)
+- [x] 6. Edge cases (undo without entry, cycle reset keeps, done-again not counted, deletion keeps)
+- [x] 7. Regression: new counter harness + all 7 existing harnesses
+- [x] 8. Review and commit
 
 FOURTEENTH GOAL: STREAK COUNTERS
 --------------------------------
@@ -499,15 +499,15 @@ Decisions:
   streak number; doneCounts() untouched.
 
 Tasks:
-[x] 1. Data: streak field + migration (default 0)
-[x] 2. streakOnBoundary() helper + hook in resetDueCycles (skip hour cycles, skip first-time scheduling)
-[x] 3. Per-task streak badge in renderTaskItem (no refreshStreaks() needed - boundary resets already re-render, so the badge is always fresh)
-[x] 4. dayStreak(log, now) helper
-[x] 5. Sixth stats-strip cell + renderStats streak (doneCounts untouched)
-[x] 6. CSS: streak badge + strip grid with six cells (auto-fit)
-[x] 7. Edge cases (hours never count, late crossing counts once, anchor/untick untouched, today not dead yet)
-[x] 8. Regression: new streak harness + all 8 existing harnesses
-[x] 9. Review and commit
+- [x] 1. Data: streak field + migration (default 0)
+- [x] 2. streakOnBoundary() helper + hook in resetDueCycles (skip hour cycles, skip first-time scheduling)
+- [x] 3. Per-task streak badge in renderTaskItem (no refreshStreaks() needed - boundary resets already re-render, so the badge is always fresh)
+- [x] 4. dayStreak(log, now) helper
+- [x] 5. Sixth stats-strip cell + renderStats streak (doneCounts untouched)
+- [x] 6. CSS: streak badge + strip grid with six cells (auto-fit)
+- [x] 7. Edge cases (hours never count, late crossing counts once, anchor/untick untouched, today not dead yet)
+- [x] 8. Regression: new streak harness + all 8 existing harnesses
+- [x] 9. Review and commit
 
 CHANGE LOG
 ----------

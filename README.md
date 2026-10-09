@@ -11,7 +11,7 @@ JavaScript — no framework, no build step, no runtime dependencies**. Everythin
 your browser's `localStorage`.
 
 **[Live demo](https://sebaromerox.github.io/OrganizeYou/)** ·
-Runs fully offline · Data never leaves your device
+**[Roadmap](docs/ROADMAP.md)** · Runs fully offline · Data never leaves your device
 
 ![Desktop view: stats strip, category sections, badge types and the Done section](docs/screenshots/desktop.png)
 
@@ -94,7 +94,7 @@ modals.js    dialog orchestration (mode builder, tag chips, settings)
 modal.js     the reusable dialog component (focus trap, Escape, focus restore)
 app.js       entry: hydrate, wire buttons, startup sequence, ticker
 tests/       node:test suites for logic.js (zero dependencies)
-roadmap.txt  the build log: 14 goals, decisions and adjustments
+docs/        screenshots, social preview image and ROADMAP.md
 ```
 
 The import graph is acyclic and documented in `state.js`; `app.js` is the only module
@@ -127,17 +127,23 @@ npm run lint    # eslint (dev-only dependency)
 CI runs lint, `prettier --check` and the tests on Node 20 and 22 for every push and
 pull request.
 
-## How it was built
+## How this project evolved
 
-`roadmap.txt` is the full build log: fourteen goals, each with its decisions,
-edge cases, adjustments discovered on the way, and a dated changelog. `improvementPlan.txt`
-records the portfolio review that shaped the current structure (module split, tests,
-CI, robustness).
+The full build log lives in
+**[docs/ROADMAP.md](docs/ROADMAP.md)**: fourteen goals, each with its decisions,
+edge cases, adjustments discovered on the way, and a dated changelog.
+
+The process is visible in the commit history too — every goal follows the same
+discipline: _define the goal_ → _build it_ → _mark it reviewed and committed_.
+Browse the [commit history](https://github.com/SebaRomeroX/OrganizeYou/commits/main)
+to see that narrative play out goal by goal.
+
+[`improvementPlan.txt`](improvementPlan.txt) records the portfolio review that
+shaped the current structure (README, screenshots, license, module split, tests,
+CI, robustness) — findings, plan, corrections found while executing, and grades.
 
 ## What's next
 
-- Make the process story easier to find: link the roadmap from the README header,
-  goal-by-goal commit narrative
 - Optional: sync across devices, PWA offline install
 
 ## License
