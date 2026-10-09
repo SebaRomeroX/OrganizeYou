@@ -82,3 +82,32 @@ describe("daily compound task (repeats + subtasks + cycle)", () => {
     assert.equal(t.cycle.dueAt, null);
   });
 });
+
+describe("subtask-only daily task (subtasks + cycle, no repeats)", () => {
+  it("clears every subtask at the boundary", () => {
+    render.addTask("english", [], {
+      subtasks: [
+        { id: "s0", text: "out loud", done: false },
+        { id: "s1", text: "duo", done: false },
+      ],
+      cycle: { every: 1, unit: "day", dueAt: null },
+    });
+    const t = store.tasks.at(-1);
+
+    render.toggleSubtask(t.id, "s0");
+    render.toggleSubtask(t.id, "s1");
+
+    assert.equal(t.done, true, "all subtasks ticked completes it");
+    assert.equal(t.cycle.dueAt, at(2026, 9, 6));
+
+    setNow(at(2026, 9, 6, 0, 5));
+
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.equal(t.done, false);
+    assert.ok(
+      t.subtasks.every((s) => !s.done),
+      "every subtask tick is cleared"
+    );
+    assert.equal(t.cycle.dueAt, null);
+  });
+});
