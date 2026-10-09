@@ -137,3 +137,50 @@ describe("partial progress", () => {
     assert.equal(t.cycle.dueAt, null);
   });
 });
+
+describe("real-data fixture (observed in the wild)", () => {
+  it("resets the math task shape: 4 subtasks, target 5, subs [o x x o] done via main", () => {
+    // The exact persisted state from the bug report's browser data:
+    // "math", repeats 5/5, subtasks [go class, theory, practice,
+    // review] with [theory, practice] ticked, daily cycle
+    render.addTask("math", [], {
+      repeats: { current: 0, target: 5 },
+      subtasks: [
+        { id: "go", text: "go class", done: false },
+        { id: "th", text: "theory", done: false },
+        { id: "pr", text: "practice exercises", done: false },
+        { id: "re", text: "review", done: false },
+      ],
+      cycle: { every: 1, unit: "day", dueAt: null },
+    });
+    const t = store.tasks.at(-1);
+
+    render.toggleSubtask(t.id, "th");
+    render.toggleSubtask(t.id, "pr");
+    render.toggleTask(t.id); // main tick fills the counter to the target
+
+    // Mirrors the persisted record byte for byte
+    assert.deepEqual(
+      {
+        done: t.done,
+        counter: `${t.repeats.current}/${t.repeats.target}`,
+        subs: t.subtasks.map((s) => (s.done ? "x" : "o")).join(""),
+      },
+      { done: true, counter: "5/5", subs: "oxxo" }
+    );
+    assert.equal(t.cycle.dueAt, at(2026, 9, 6));
+
+    setNow(at(2026, 9, 6, 0, 5));
+
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.deepEqual(
+      {
+        done: t.done,
+        counter: `${t.repeats.current}/${t.repeats.target}`,
+        subs: t.subtasks.map((s) => (s.done ? "x" : "o")).join(""),
+        dueAt: t.cycle.dueAt,
+      },
+      { done: false, counter: "0/5", subs: "oooo", dueAt: null }
+    );
+  });
+});
