@@ -38,6 +38,17 @@ export function syncCycleDue(task) {
   }
 }
 
+// Clear one cycle task's progress at its boundary: main flag,
+// repeat counter AND subtask ticks together, so the task restarts
+// as a whole (streak rides along - it must see `done` first)
+function resetCycleTask(t) {
+  streakOnBoundary(t); // must see `done` before it is cleared
+  t.done = false;
+  if (t.repeats) t.repeats.current = 0;
+  t.subtasks.forEach((s) => (s.done = false));
+  t.cycle.dueAt = null;
+}
+
 // Reset every cycle task whose time has come (progress cleared),
 // no matter whether it was completed or only partially started.
 // Returns true if anything changed - the caller re-renders then.
@@ -46,11 +57,7 @@ export function resetDueCycles() {
   let changed = false;
   store.tasks.forEach((t) => {
     if (t.cycle && t.cycle.dueAt != null && now >= t.cycle.dueAt) {
-      streakOnBoundary(t); // must see `done` before it is cleared
-      t.done = false;
-      if (t.repeats) t.repeats.current = 0;
-      t.subtasks.forEach((s) => (s.done = false));
-      t.cycle.dueAt = null;
+      resetCycleTask(t);
       changed = true;
     }
   });
@@ -58,14 +65,22 @@ export function resetDueCycles() {
   return changed;
 }
 
-// Schedule pending resets for started-but-unfinished cycle tasks at
-// load: dueAt used to exist on completed tasks only, so a partial
-// task stuck from an earlier version never reset. Returns true if
-// anything changed.
+// At load, reconcile cycle tasks the boundary engine never got a
+// deadline for: orphan progress from earlier versions (partial
+// tasks used to be saved without a dueAt) is reset on sight -
+// scheduling it now would keep the stale ticks around for a whole
+// extra cycle - and every other started-but-unfinished task gets
+// its pending reset scheduled. Returns true if anything changed.
 export function backfillPartialCycles() {
   let changed = false;
   store.tasks.forEach((t) => {
     if (!t.cycle || t.done) return;
+    const progress = (t.repeats != null && t.repeats.current > 0) || t.subtasks.some((s) => s.done);
+    if (progress && t.cycle.dueAt == null) {
+      resetCycleTask(t);
+      changed = true;
+      return;
+    }
     const before = t.cycle.dueAt;
     syncCycleDue(t);
     if (t.cycle.dueAt !== before) changed = true;
