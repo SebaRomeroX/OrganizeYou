@@ -8,7 +8,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { resetAnchor } from "./helpers.js";
-import { store, cycles, render, setNow, resetApp, RealDate } from "./app-harness.js";
+import { store, storage, cycles, render, setNow, resetApp, RealDate } from "./app-harness.js";
 
 const at = (y, m, d, h = 0, min = 0) => new RealDate(y, m, d, h, min, 0, 0).getTime();
 
@@ -182,5 +182,30 @@ describe("real-data fixture (observed in the wild)", () => {
       },
       { done: false, counter: "0/5", subs: "oooo", dueAt: null }
     );
+  });
+});
+
+describe("app closed across the boundary", () => {
+  it("starts clean on reload: hydrate + backfill + reset, the app.js boot order", () => {
+    const t = addCompound(3);
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleTask(t.id);
+    assert.equal(t.done, true);
+
+    // The app closes with everything persisted; the boundary passes
+    // unnoticed
+    setNow(at(2026, 9, 6, 0, 5));
+
+    // Exactly what app.js runs on boot
+    storage.hydrate();
+    cycles.backfillPartialCycles();
+    cycles.resetDueCycles();
+
+    const loaded = store.tasks.find((x) => x.text === "compound");
+    assert.notEqual(loaded, t, "state came fresh from storage, not memory");
+    assert.equal(loaded.done, false);
+    assert.equal(loaded.repeats.current, 0);
+    assert.ok(loaded.subtasks.every((s) => !s.done));
+    assert.equal(loaded.cycle.dueAt, null);
   });
 });
