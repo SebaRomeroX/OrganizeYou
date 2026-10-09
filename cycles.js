@@ -25,8 +25,7 @@ export function syncCycleDue(task) {
   }
   // Undone: only partial progress needs a pending reset
   const progress =
-    (task.repeats != null && task.repeats.current > 0) ||
-    task.subtasks.some((s) => s.done);
+    (task.repeats != null && task.repeats.current > 0) || task.subtasks.some((s) => s.done);
   if (!progress) {
     task.cycle.dueAt = null;
     return;

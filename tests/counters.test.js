@@ -26,12 +26,17 @@ describe("doneCounts: week bucket per weekStartDay", () => {
     // Wed(3): 2; Thu(4): today only -> 1; Fri(5): back to Oct 2
     // (e excluded, d included) -> 4; Sat(6): back to Oct 3 -> 4
     const rows = [
-      [0, 4], [1, 3], [2, 2], [3, 2], [4, 1], [5, 4], [6, 4],
+      [0, 4],
+      [1, 3],
+      [2, 2],
+      [3, 2],
+      [4, 1],
+      [5, 4],
+      [6, 4],
     ];
     for (const [weekStartDay, week] of rows) {
       setAnchor({ weekStartDay });
-      assert.equal(doneCounts(LOG, NOW).week, week,
-        `weekStartDay=${weekStartDay}`);
+      assert.equal(doneCounts(LOG, NOW).week, week, `weekStartDay=${weekStartDay}`);
     }
     setAnchor(null); // restore defaults for the other suites
   });
@@ -41,11 +46,21 @@ describe("doneCounts: midnight rollover", () => {
   it("moves a 23:30 completion from 'today' to plain history", () => {
     const late = [{ id: "x", t: at(2026, 9, 8, 23, 30).getTime() }];
     // 23:45: still today
-    assert.deepEqual(doneCounts(late, at(2026, 9, 8, 23, 45)),
-      { today: 1, week: 1, month: 1, year: 1, total: 1 });
+    assert.deepEqual(doneCounts(late, at(2026, 9, 8, 23, 45)), {
+      today: 1,
+      week: 1,
+      month: 1,
+      year: 1,
+      total: 1,
+    });
     // 00:15 next day: today rolls to 0, week/month/total stand
-    assert.deepEqual(doneCounts(late, at(2026, 9, 9, 0, 15)),
-      { today: 0, week: 1, month: 1, year: 1, total: 1 });
+    assert.deepEqual(doneCounts(late, at(2026, 9, 9, 0, 15)), {
+      today: 0,
+      week: 1,
+      month: 1,
+      year: 1,
+      total: 1,
+    });
   });
 
   it("rolls the week bucket when the configured week turns over", () => {
@@ -63,15 +78,15 @@ describe("dayStreak: gap rules (table)", () => {
     const d = (day) => ({ id: "x", t: at(2026, 9, day, 9).getTime() });
     // days present -> expected streak (now = Thu Oct 8)
     const rows = [
-      [[], 0],                 // nothing
-      [[8], 1],                // today only
-      [[7], 1],                // yesterday only (not dead yet)
+      [[], 0], // nothing
+      [[8], 1], // today only
+      [[7], 1], // yesterday only (not dead yet)
       [[8, 7], 2],
-      [[8, 6], 1],             // gap on Oct 7
+      [[8, 6], 1], // gap on Oct 7
       [[8, 7, 6, 5], 4],
-      [[8, 5, 4], 1],          // gap on Oct 7 -> today only
-      [[6, 5], 0],             // neither today nor yesterday
-      [[8, 8, 7], 2],          // dupes on one day count once
+      [[8, 5, 4], 1], // gap on Oct 7 -> today only
+      [[6, 5], 0], // neither today nor yesterday
+      [[8, 8, 7], 2], // dupes on one day count once
     ];
     for (const [days, want] of rows) {
       assert.equal(dayStreak(days.map(d), NOW), want, `days=[${days}]`);

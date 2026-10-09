@@ -17,8 +17,8 @@ Runs fully offline · Data never leaves your device
   category and completed tasks collect in a **Done (N)** section at the end. A task with
   two tags appears in both sections (it moves as one unit).
 - **Recurring cycles** – `Every N hours / days / weeks / months`.
-  - Hours are *true elapsed time* (`+2h` is +2h of real time, DST-proof).
-  - Day/week/month are *calendar-aligned* to a configurable anchor: start time
+  - Hours are _true elapsed time_ (`+2h` is +2h of real time, DST-proof).
+  - Day/week/month are _calendar-aligned_ to a configurable anchor: start time
     (e.g. 06:00), week start day, month start day and month anchor (for `N > 1` the
     periods phase to the epoch, so a "every 3 months" task stays on Jan/Apr/Jul/Oct).
   - Completing a cycle resets progress and shows a **cycle badge**; a per-task
@@ -28,7 +28,7 @@ Runs fully offline · Data never leaves your device
   subtask is ticked.
 - **Deadlines** – `YYYY-MM-DD` counts to the end of that day ("today", "3 days"),
   timed deadlines count days → hours → 10-minute steps with urgent/overdue states.
-- **Appointments** – a moment when the task *unlocks*: the checkbox stays disabled
+- **Appointments** – a moment when the task _unlocks_: the checkbox stays disabled
   until then, the badge counts up ("in 3 days" → "in 1 hour" → "in 10 min" → "now").
   Once the moment passes it reads **now** and never nag "overdue".
 - **Time since** – a count-up badge from the last time you did something
@@ -39,8 +39,8 @@ Runs fully offline · Data never leaves your device
 - Dark, responsive UI (tested down to 390 px), `aria-label`ed controls, keyboard-usable
   modal with Escape-to-close.
 
-| Mobile | New task dialog |
-| --- | --- |
+| Mobile                                               | New task dialog                               |
+| ---------------------------------------------------- | --------------------------------------------- |
 | ![Mobile view at 390px](docs/screenshots/mobile.png) | ![New task modal](docs/screenshots/modal.png) |
 
 ## Why no framework?

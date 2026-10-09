@@ -39,9 +39,7 @@ function loadTasks() {
 
       // Cycle: valid schedule object or null
       const cycle =
-        t.cycle &&
-        CYCLE_UNITS.includes(t.cycle.unit) &&
-        Number(t.cycle.every) >= 1
+        t.cycle && CYCLE_UNITS.includes(t.cycle.unit) && Number(t.cycle.every) >= 1
           ? {
               every: Math.floor(Number(t.cycle.every)),
               unit: t.cycle.unit,
@@ -58,8 +56,7 @@ function loadTasks() {
       // Deadline / appointment: "YYYY-MM-DD" (deadline ends that day,
       // appointment starts it) or "YYYY-MM-DDTHH:mm". Mutually
       // exclusive; deadline wins on hand-edited data.
-      const validDue = (v) =>
-        typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v);
+      const validDue = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v);
       const deadline = validDue(t.deadline) ? t.deadline : null;
       const appointment = !deadline && validDue(t.appointment) ? t.appointment : null;
       // Time since: an independent record (same string forms),
@@ -70,7 +67,18 @@ function loadTasks() {
       // Hour cycles never count, but the field stays on the task
       const streak = Number.isFinite(t.streak) && t.streak >= 1 ? Math.floor(t.streak) : 0;
 
-      return { ...t, tags: Array.isArray(t.tags) ? t.tags : [], repeats, subtasks, cycle, deadline, appointment, since, streak, done };
+      return {
+        ...t,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        repeats,
+        subtasks,
+        cycle,
+        deadline,
+        appointment,
+        since,
+        streak,
+        done,
+      };
     });
   } catch {
     return [];

@@ -20,11 +20,13 @@ const at = (y, m, d, h = 0, min = 0) => new Date(y, m, d, h, min, 0, 0);
 function runCase({ anchor = null, cycle, from, want, hours }) {
   setAnchor(anchor); // null normalizes to the defaults
   const got = new Date(nextCycleBoundary(cycle, from));
-  assert.equal(got.getTime(), want.getTime(),
-    `from ${from}: got ${got}, want ${want}`);
+  assert.equal(got.getTime(), want.getTime(), `from ${from}: got ${got}, want ${want}`);
   if (hours != null) {
-    assert.equal((got.getTime() - from.getTime()) / 3600000, hours,
-      `from ${from}: real elapsed drifted (${hours}h expected)`);
+    assert.equal(
+      (got.getTime() - from.getTime()) / 3600000,
+      hours,
+      `from ${from}: real elapsed drifted (${hours}h expected)`
+    );
   }
 }
 
@@ -36,8 +38,13 @@ describe("DST spring-forward (2026-03-29 02:00 -> 03:00)", () => {
   it("day: anchor time 03:00 lands on the wall clock, 1 real hour after 01:00", () => {
     // 02:00-03:00 does not exist that night; constructing 03:00
     // local must pick CEST (01:00 UTC), not midnight+3h of ms
-    runCase({ anchor: { time: "03:00" }, cycle: DAY, from: at(2026, 2, 29, 1),
-      want: at(2026, 2, 29, 3), hours: 1 });
+    runCase({
+      anchor: { time: "03:00" },
+      cycle: DAY,
+      from: at(2026, 2, 29, 1),
+      want: at(2026, 2, 29, 3),
+      hours: 1,
+    });
   });
 
   it("week: boundaries stay on Monday across the transition", () => {
@@ -79,10 +86,10 @@ describe("DST fall-back (2026-10-25 03:00 -> 02:00)", () => {
 describe("N > 1 epoch phasing", () => {
   it("month every=3 phases to Jan/Apr/Jul/Oct regardless of start month", () => {
     const rows = [
-      [at(2026, 0, 15), at(2026, 3, 1)],  // Jan -> Apr
-      [at(2026, 3, 15), at(2026, 6, 1)],  // Apr -> Jul
-      [at(2026, 6, 15), at(2026, 9, 1)],  // Jul -> Oct
-      [at(2026, 9, 15), at(2027, 0, 1)],  // Oct -> next Jan
+      [at(2026, 0, 15), at(2026, 3, 1)], // Jan -> Apr
+      [at(2026, 3, 15), at(2026, 6, 1)], // Apr -> Jul
+      [at(2026, 6, 15), at(2026, 9, 1)], // Jul -> Oct
+      [at(2026, 9, 15), at(2027, 0, 1)], // Oct -> next Jan
     ];
     for (const [from, want] of rows) {
       runCase({ cycle: { unit: "month", every: 3 }, from, want });
@@ -115,7 +122,12 @@ describe("anchor variants (table)", () => {
       [{ time: "06:00" }, { unit: "month", every: 1 }, at(2026, 9, 8), at(2026, 10, 1, 6)],
       [{ weekStartDay: 2 }, { unit: "week", every: 1 }, at(2026, 9, 8), at(2026, 9, 13)],
       [{ weekStartDay: 6 }, { unit: "week", every: 1 }, at(2026, 9, 8), at(2026, 9, 10)],
-      [{ monthStartDay: 15, time: "06:00" }, { unit: "month", every: 1 }, at(2026, 9, 8), at(2026, 9, 15, 6)],
+      [
+        { monthStartDay: 15, time: "06:00" },
+        { unit: "month", every: 1 },
+        at(2026, 9, 8),
+        at(2026, 9, 15, 6),
+      ],
     ];
     for (const [anchor, cycle, from, want] of rows) {
       runCase({ anchor, cycle, from, want });

@@ -22,8 +22,7 @@ describe("nowStamp", () => {
 
 describe("sinceMoment", () => {
   it("falls back to 00:00 for date-only records", () => {
-    assert.equal(sinceMoment("2026-10-07").getTime(),
-      new Date(2026, 9, 7, 0, 0, 0, 0).getTime());
+    assert.equal(sinceMoment("2026-10-07").getTime(), new Date(2026, 9, 7, 0, 0, 0, 0).getTime());
   });
 
   it("returns null for invalid input", () => {

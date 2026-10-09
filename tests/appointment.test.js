@@ -10,13 +10,17 @@ const NOW = new Date(2026, 9, 8, 10, 0, 0, 0);
 
 describe("appointmentMoment", () => {
   it("unlocks at 00:00 for date-only input", () => {
-    assert.equal(appointmentMoment("2026-10-09").getTime(),
-      new Date(2026, 9, 9, 0, 0, 0, 0).getTime());
+    assert.equal(
+      appointmentMoment("2026-10-09").getTime(),
+      new Date(2026, 9, 9, 0, 0, 0, 0).getTime()
+    );
   });
 
   it("uses the exact time when given", () => {
-    assert.equal(appointmentMoment("2026-10-09T15:45").getTime(),
-      new Date(2026, 9, 9, 15, 45, 0, 0).getTime());
+    assert.equal(
+      appointmentMoment("2026-10-09T15:45").getTime(),
+      new Date(2026, 9, 9, 15, 45, 0, 0).getTime()
+    );
   });
 
   it("returns null for invalid input", () => {
@@ -53,12 +57,30 @@ describe("appointmentInfo", () => {
   });
 
   it("steps days -> hours -> 10 min for timed appointments", () => {
-    assert.deepEqual(appointmentInfo("2026-10-13T14:00", NOW), { text: "in 5 days", state: "normal" });
-    assert.deepEqual(appointmentInfo("2026-10-09T11:00", NOW), { text: "in 1 day", state: "normal" });
-    assert.deepEqual(appointmentInfo("2026-10-08T15:00", NOW), { text: "in 5 hours", state: "urgent" });
-    assert.deepEqual(appointmentInfo("2026-10-08T11:00", NOW), { text: "in 1 hour", state: "urgent" });
-    assert.deepEqual(appointmentInfo("2026-10-08T10:25", NOW), { text: "in 20 min", state: "urgent" });
-    assert.deepEqual(appointmentInfo("2026-10-08T10:05", NOW), { text: "in 10 min", state: "urgent" });
+    assert.deepEqual(appointmentInfo("2026-10-13T14:00", NOW), {
+      text: "in 5 days",
+      state: "normal",
+    });
+    assert.deepEqual(appointmentInfo("2026-10-09T11:00", NOW), {
+      text: "in 1 day",
+      state: "normal",
+    });
+    assert.deepEqual(appointmentInfo("2026-10-08T15:00", NOW), {
+      text: "in 5 hours",
+      state: "urgent",
+    });
+    assert.deepEqual(appointmentInfo("2026-10-08T11:00", NOW), {
+      text: "in 1 hour",
+      state: "urgent",
+    });
+    assert.deepEqual(appointmentInfo("2026-10-08T10:25", NOW), {
+      text: "in 20 min",
+      state: "urgent",
+    });
+    assert.deepEqual(appointmentInfo("2026-10-08T10:05", NOW), {
+      text: "in 10 min",
+      state: "urgent",
+    });
   });
 
   it("sticks at 'now' from the moment on - never overdue", () => {

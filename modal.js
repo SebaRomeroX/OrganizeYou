@@ -21,7 +21,14 @@ export const Modal = (() => {
     extraEl.hidden = extraEl.children.length === 0;
   }
 
-  function open({ title, fields = [], extra, submitLabel = "Save", onSubmit: submit, keepOpen: keep = false }) {
+  function open({
+    title,
+    fields = [],
+    extra,
+    submitLabel = "Save",
+    onSubmit: submit,
+    keepOpen: keep = false,
+  }) {
     lastFocused = document.activeElement;
     onSubmit = submit;
     onExtra = extra;

@@ -16,10 +16,7 @@ export function applyMainCheckboxState(box, task) {
     box.setAttribute("aria-label", "Locked until the appointment moment");
   } else if (task.repeats) {
     box.disabled = false;
-    box.setAttribute(
-      "aria-label",
-      `Progress: ${task.repeats.current} of ${task.repeats.target}`
-    );
+    box.setAttribute("aria-label", `Progress: ${task.repeats.current} of ${task.repeats.target}`);
   } else if (task.subtasks.length > 0) {
     box.disabled = true; // subtask-only: completes via its subtasks
     box.setAttribute("aria-label", "Completes when every subtask is ticked");

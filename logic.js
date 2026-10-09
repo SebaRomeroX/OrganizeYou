@@ -80,8 +80,11 @@ function anchorMinutes() {
 function dayNumInstant(num, minutes) {
   const d = new Date(num * 86400000);
   return new Date(
-    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
-    Math.floor(minutes / 60), minutes % 60
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    Math.floor(minutes / 60),
+    minutes % 60
   ).getTime();
 }
 

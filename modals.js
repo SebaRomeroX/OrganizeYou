@@ -13,11 +13,27 @@ import { applyCycleAnchor, syncCycleDue } from "./cycles.js";
 import { nextCycleBoundary, normalizeCycleAnchor, nowStamp } from "./logic.js";
 
 const WEEKDAY_NAMES = [
-  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /* ---------- Tag chips ---------- */
@@ -165,8 +181,7 @@ function createModesState(task = null) {
   // Split the stored deadline/appointment/since ("YYYY-MM-DD" or
   // "...THH:mm") into the two inputs; empty date = none
   const deadline = task && typeof task.deadline === "string" ? task.deadline : "";
-  const appointment =
-    task && typeof task.appointment === "string" ? task.appointment : "";
+  const appointment = task && typeof task.appointment === "string" ? task.appointment : "";
   const since = task && typeof task.since === "string" ? task.since : "";
   return {
     repeatOn: !!(task && task.repeats),
@@ -203,8 +218,7 @@ function modesToData(state, original = null) {
   let repeats = null;
   if (state.repeatOn) {
     const target = Math.max(1, Math.floor(Number(state.target)) || 1);
-    const current =
-      original && original.repeats ? Math.min(original.repeats.current, target) : 0;
+    const current = original && original.repeats ? Math.min(original.repeats.current, target) : 0;
     repeats = { current, target };
   }
   const subs = state.subtasks.filter((s) => s.text.trim() !== "");
@@ -221,11 +235,12 @@ function modesToData(state, original = null) {
       ? `${state.deadlineDate}T${state.deadlineTime}`
       : state.deadlineDate
     : null;
-  const appointment = !deadline && state.appointmentDate
-    ? state.appointmentTime
-      ? `${state.appointmentDate}T${state.appointmentTime}`
-      : state.appointmentDate
-    : null;
+  const appointment =
+    !deadline && state.appointmentDate
+      ? state.appointmentTime
+        ? `${state.appointmentDate}T${state.appointmentTime}`
+        : state.appointmentDate
+      : null;
   // Time since: independent of the two above - a task can have all
   // three; empty date = the mode is off
   const since = state.sinceDate
@@ -674,7 +689,14 @@ export function openNewTaskModal() {
     },
     onSubmit: ({ text }) => {
       const { repeats, subtasks, cycle, deadline, appointment, since } = modesToData(modes);
-      addTask(text, orderedTags(selected), { repeats, subtasks, cycle, deadline, appointment, since });
+      addTask(text, orderedTags(selected), {
+        repeats,
+        subtasks,
+        cycle,
+        deadline,
+        appointment,
+        since,
+      });
     },
   });
 }
@@ -771,9 +793,7 @@ export function openEditTaskModal(id) {
       // when the schedule is the same (it counts from completion)
       if (task.cycle) {
         const sameSchedule =
-          prevCycle &&
-          prevCycle.every === task.cycle.every &&
-          prevCycle.unit === task.cycle.unit;
+          prevCycle && prevCycle.every === task.cycle.every && prevCycle.unit === task.cycle.unit;
         if (task.done) {
           task.cycle.dueAt =
             sameSchedule && prevCycle.dueAt != null

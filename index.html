@@ -1,55 +1,81 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1e222b">
-  <title>OrganizeYou - To-Do List</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <main class="app">
-    <h1>OrganizeYou</h1>
-    <p class="subtitle">Your to-do list</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1e222b" />
+    <title>OrganizeYou - To-Do List</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>OrganizeYou</h1>
+      <p class="subtitle">Your to-do list</p>
 
-    <!-- Completed-tasks summary: today / week / month / year / total -->
-    <section class="stats-strip" aria-label="Tasks completed">
-      <div class="stat-cell"><span class="stat-num" data-stat="today">0</span><span class="stat-label">Today</span></div>
-      <div class="stat-cell"><span class="stat-num" data-stat="week">0</span><span class="stat-label">This week</span></div>
-      <div class="stat-cell"><span class="stat-num" data-stat="month">0</span><span class="stat-label">This month</span></div>
-      <div class="stat-cell"><span class="stat-num" data-stat="year">0</span><span class="stat-label">This year</span></div>
-      <div class="stat-cell"><span class="stat-num" data-stat="total">0</span><span class="stat-label">Total</span></div>
-      <div class="stat-cell"><span class="stat-num" data-stat="streak">0</span><span class="stat-label">Streak</span></div>
-    </section>
+      <!-- Completed-tasks summary: today / week / month / year / total -->
+      <section class="stats-strip" aria-label="Tasks completed">
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="today">0</span><span class="stat-label">Today</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="week">0</span><span class="stat-label">This week</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="month">0</span
+          ><span class="stat-label">This month</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="year">0</span><span class="stat-label">This year</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="total">0</span><span class="stat-label">Total</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-num" data-stat="streak">0</span><span class="stat-label">Streak</span>
+        </div>
+      </section>
 
-    <div class="actions">
-      <button id="new-task-btn" class="action-btn primary" type="button">+ New task</button>
-      <button id="categories-btn" class="action-btn" type="button">Categories <span class="btn-icon" aria-hidden="true">✎</span></button>
-      <button id="settings-btn" class="action-btn" type="button">Cycle reset <span class="btn-icon" aria-hidden="true">⚙</span></button>
-    </div>
-
-    <div id="task-list" class="task-list"></div>
-
-    <p id="empty-state" class="empty-state">No tasks yet. Add one with the button above.</p>
-  </main>
-
-  <!-- Reusable modal -->
-  <div id="modal-backdrop" class="modal-backdrop" aria-hidden="true">
-    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div class="modal-header">
-        <h2 id="modal-title" class="modal-title"></h2>
-        <button id="modal-close" class="icon-btn modal-close" type="button" aria-label="Close dialog">×</button>
+      <div class="actions">
+        <button id="new-task-btn" class="action-btn primary" type="button">+ New task</button>
+        <button id="categories-btn" class="action-btn" type="button">
+          Categories <span class="btn-icon" aria-hidden="true">✎</span>
+        </button>
+        <button id="settings-btn" class="action-btn" type="button">
+          Cycle reset <span class="btn-icon" aria-hidden="true">⚙</span>
+        </button>
       </div>
-      <form id="modal-form" novalidate>
-        <div id="modal-fields" class="modal-fields"></div>
-        <div id="modal-extra" class="modal-extra" hidden></div>
-        <button id="modal-submit" type="submit" class="action-btn primary modal-submit">Save</button>
-      </form>
-    </div>
-  </div>
 
-  <!-- Single ES module entry: it imports state, storage, cycles,
+      <div id="task-list" class="task-list"></div>
+
+      <p id="empty-state" class="empty-state">No tasks yet. Add one with the button above.</p>
+    </main>
+
+    <!-- Reusable modal -->
+    <div id="modal-backdrop" class="modal-backdrop" aria-hidden="true">
+      <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-header">
+          <h2 id="modal-title" class="modal-title"></h2>
+          <button
+            id="modal-close"
+            class="icon-btn modal-close"
+            type="button"
+            aria-label="Close dialog"
+          >
+            ×
+          </button>
+        </div>
+        <form id="modal-form" novalidate>
+          <div id="modal-fields" class="modal-fields"></div>
+          <div id="modal-extra" class="modal-extra" hidden></div>
+          <button id="modal-submit" type="submit" class="action-btn primary modal-submit">
+            Save
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Single ES module entry: it imports state, storage, cycles,
        badges, render, modals, logic and the modal component -->
-  <script type="module" src="app.js"></script>
-</body>
+    <script type="module" src="app.js"></script>
+  </body>
 </html>

@@ -11,7 +11,7 @@ const NOW = new Date(2026, 9, 8, 10, 0, 0, 0);
 
 // Buckets: today / this week / this month / this year / total
 const LOG = [
-  { id: "a", t: new Date(2026, 9, 8, 9).getTime() },  // today
+  { id: "a", t: new Date(2026, 9, 8, 9).getTime() }, // today
   { id: "b", t: new Date(2026, 9, 7, 12).getTime() }, // yesterday (this week)
   { id: "c", t: new Date(2026, 9, 5, 12).getTime() }, // Monday (this week)
   { id: "d", t: new Date(2026, 9, 4, 12).getTime() }, // Sunday (last week, Mon-start)
@@ -50,19 +50,31 @@ describe("dayStreak", () => {
   });
 
   it("counts consecutive days ending today", () => {
-    assert.equal(dayStreak([
-      { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
-      { id: "b", t: new Date(2026, 9, 7, 18).getTime() },
-      { id: "c", t: new Date(2026, 9, 6, 12).getTime() },
-    ], NOW), 3);
+    assert.equal(
+      dayStreak(
+        [
+          { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
+          { id: "b", t: new Date(2026, 9, 7, 18).getTime() },
+          { id: "c", t: new Date(2026, 9, 6, 12).getTime() },
+        ],
+        NOW
+      ),
+      3
+    );
   });
 
   it("counts from yesterday when today has none yet (not dead until the day ends)", () => {
     assert.equal(dayStreak(day(2026, 9, 7), NOW), 1);
-    assert.equal(dayStreak([
-      { id: "b", t: new Date(2026, 9, 7, 18).getTime() },
-      { id: "c", t: new Date(2026, 9, 6, 12).getTime() },
-    ], NOW), 2);
+    assert.equal(
+      dayStreak(
+        [
+          { id: "b", t: new Date(2026, 9, 7, 18).getTime() },
+          { id: "c", t: new Date(2026, 9, 6, 12).getTime() },
+        ],
+        NOW
+      ),
+      2
+    );
   });
 
   it("is 0 when neither today nor yesterday has a completion", () => {
@@ -70,18 +82,30 @@ describe("dayStreak", () => {
   });
 
   it("breaks at a gap", () => {
-    assert.equal(dayStreak([
-      { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
-      { id: "c", t: new Date(2026, 9, 6, 12).getTime() }, // Oct 7 missing
-    ], NOW), 1);
+    assert.equal(
+      dayStreak(
+        [
+          { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
+          { id: "c", t: new Date(2026, 9, 6, 12).getTime() }, // Oct 7 missing
+        ],
+        NOW
+      ),
+      1
+    );
   });
 
   it("counts a day once regardless of entry count", () => {
-    assert.equal(dayStreak([
-      { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
-      { id: "b", t: new Date(2026, 9, 8, 18).getTime() },
-      { id: "c", t: new Date(2026, 9, 7, 12).getTime() },
-    ], NOW), 2);
+    assert.equal(
+      dayStreak(
+        [
+          { id: "a", t: new Date(2026, 9, 8, 9).getTime() },
+          { id: "b", t: new Date(2026, 9, 8, 18).getTime() },
+          { id: "c", t: new Date(2026, 9, 7, 12).getTime() },
+        ],
+        NOW
+      ),
+      2
+    );
   });
 });
 
