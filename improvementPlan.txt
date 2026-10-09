@@ -12,6 +12,7 @@ as the roadmap.
 
 CURRENT GRADE: 5/10 (code: 7/10)  ->  ~7/10 after Phase 1 (2026-10-08)
                              ->  ~8/10 after Phase 2 (2026-10-08)
+                             ->  ~8.5-9/10 after Phase 3 (2026-10-08) [ALL PHASES DONE]
 --------------------------------
 Signals a recruiter sees in the first 30 seconds:
 - README: MISSING - instant "incomplete" read, caps the grade alone.
@@ -151,20 +152,32 @@ Phase 2 - Structural (a few days, 7 -> 8):  [DONE 2026-10-08]
       design language: title, feature chips, three mock tasks with
       real badges).
 
-Phase 3 - Differentiation (8 -> 9):
-[ ] 10. Make the process visible: rename roadmap.txt to
+Phase 3 - Differentiation (8 -> 9):          [DONE 2026-10-08]
+[x] 10. Make the process visible: rename roadmap.txt to
       docs/ROADMAP.md (or link it) and add a short "How this project
       evolved" section in the README pointing at the goal-by-goal
       commits. The process narrative is the unfair advantage over a
       prettier to-do app.
-[ ] 11. Optional: README badge row (CI status, license, demo link).
+      DONE: git mv to docs/ROADMAP.md (the === / --- underlines were
+      already valid setext Markdown, so the title and the 19 goal
+      sections render as headings without a rewrite); all 110 task
+      lines converted to '- [x]' checkboxes so GitHub draws them
+      checked; docs/ is prettierignored so nothing reflows the ASCII
+      structure. README: Roadmap link in the header row, architecture
+      tree updated, 'How it was built' -> 'How this project evolved'
+      linking the roadmap, the define -> build -> mark-reviewed commit
+      narrative and this plan; done bullet removed from 'What's next'.
+[x] 11. Optional: README badge row (CI status, license, demo link).
+      DONE EARLY: shipped with Phase 2's README commit (16f38bd)
+      alongside the CI workflow - badge row is live: CI passing /
+      MIT / demo.
 
 GRADING TARGET
 --------------
 - Current: 5/10 portfolio (code 7/10).
 - After phase 1: ~7/10.  [REACHED 2026-10-08]
 - After phase 2: ~8/10.  [REACHED 2026-10-08]
-- Phase 3 polish: 8.5-9/10 defensible grade.
+- Phase 3 polish: 8.5-9/10 defensible grade.  [REACHED 2026-10-08]
 
 CHANGE LOG
 ----------
@@ -220,3 +233,21 @@ CHANGE LOG
   byte-identical after the module split and the format pass.
   Grade after Phase 2: ~8/10. Phase 3 (process narrative,
   docs/ROADMAP.md) remains open.
+- 2026-10-08: Phase 3 complete - both tasks done, 2 commits (pushed
+  after the green gate): Move the roadmap to docs/ROADMAP.md and
+  link the process narrative / this update.
+  - task 10: rename + the 110 task lines became real '- [x]'
+    checkboxes (the file's setext underlines were already valid
+    Markdown, so no rewrite was needed); README gained the header
+    Roadmap link and the 'How this project evolved' section that
+    points at docs/ROADMAP.md and the goal-by-goal commit history.
+  - task 11: shipped EARLY with Phase 2 (16f38bd) - noted as done
+    there, no separate work needed.
+  No plan corrections this phase - execution matched the plan.
+  Verification: lint clean, prettier clean, 79/79 tests, smoke
+  9/9 with zero console errors; after push CI green (Node 20/22),
+  badge passing, Pages serving (incl. docs/ROADMAP.md).
+  Grade after Phase 3: ~8.5-9/10 - ALL PHASES COMPLETE. Open for
+  later (explicitly out of scope here): docs/ROADMAP.md rename was
+  Phase 3's last structural item; remaining ideas are the optional
+  sync/PWA items in the README.
