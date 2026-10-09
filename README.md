@@ -1,10 +1,14 @@
 # OrganizeYou
 
+[![CI](https://github.com/SebaRomeroX/OrganizeYou/actions/workflows/ci.yml/badge.svg)](https://github.com/SebaRomeroX/OrganizeYou/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://sebaromerox.github.io/OrganizeYou/)
+
 A to-do list that actually models how real work behaves: things repeat on **hours or
 calendar cycles**, some can only be done **at a moment in time**, some count **up** since
 you last did them, and consistency is worth measuring. Built with **plain HTML, CSS and
-JavaScript — no framework, no build step, no dependencies**. Everything lives in your
-browser's `localStorage`.
+JavaScript — no framework, no build step, no runtime dependencies**. Everything lives in
+your browser's `localStorage`.
 
 **[Live demo](https://sebaromerox.github.io/OrganizeYou/)** ·
 Runs fully offline · Data never leaves your device
@@ -37,7 +41,7 @@ Runs fully offline · Data never leaves your device
   plus your current **day streak** (consecutive days with at least one completion).
 - **Settings modal** – change the cycle anchor and every cycled task re-syncs.
 - Dark, responsive UI (tested down to 390 px), `aria-label`ed controls, keyboard-usable
-  modal with Escape-to-close.
+  modal with focus trap, Escape-to-close and focus restore.
 
 | Mobile                                               | New task dialog                               |
 | ---------------------------------------------------- | --------------------------------------------- |
@@ -45,58 +49,69 @@ Runs fully offline · Data never leaves your device
 
 ## Why no framework?
 
-This project deliberately uses the platform: classic `<script>` tags, DOM APIs and
+This project deliberately uses the platform: native ES modules, DOM APIs and
 `localStorage`. For an app of this size that buys a lot:
 
-- **Zero dependencies and zero build step** – clone it, open it, read it. Nothing to
+- **Zero dependencies and zero build step** – clone it, serve it, read it. Nothing to
   audit, nothing that breaks when a toolchain moves on.
 - **The interesting logic is pure functions, not framework machinery** – cycle math,
   badge ladders and counters are plain functions over dates and data (see below), so
   they are unit-tested without mounting anything.
-- **The code is the portfolio** – a reviewer can open `app.js` and see the whole
-  program, not the glue between libraries.
+- **The code is the portfolio** – each module is a small, single-purpose file a
+  reviewer can hold in their head, not the glue between libraries.
 
-The trade-offs of this choice (module split, CI, stricter saves) are tracked honestly
-in `improvementPlan.txt`.
+The trade-offs of this choice and the review that shaped the current structure are
+tracked honestly in `improvementPlan.txt`.
 
 ## Quick start
 
 ```bash
 git clone https://github.com/SebaRomeroX/OrganizeYou.git
 cd OrganizeYou
+npx serve .                 # or: python3 -m http.server
 ```
 
-- Open `index.html` directly in a browser, or
-- Serve the folder (recommended): `npx serve .` or `python3 -m http.server`, then visit
-  <http://localhost:8000>.
+Then visit <http://localhost:3000> (or :8000 for Python). No install, no build. Your
+data stays in `localStorage` for that origin.
 
-No install, no build. Your data stays in `localStorage` for that origin.
+> The app is a native ES module (`<script type="module">`), so it needs an HTTP origin —
+> opening `index.html` via `file://` is blocked by the browser's module CORS rules. Any
+> static server does; the [live demo](https://sebaromerox.github.io/OrganizeYou/) needs
+> nothing at all.
 
 ## Architecture
 
 ```
-index.html   markup + script order (logic.js → modal.js → app.js)
+index.html   markup + the single module entry (<script type="module" src="app.js">)
 styles.css   all styling (dark theme, responsive)
+state.js     the shared store, constants and lookups (imports nothing)
+storage.js   localStorage keys, defensive loaders, saves, hydrate()
 logic.js     pure logic: cycle math, badge ladders, counters, streaks
-modal.js     the reusable dialog component (self-contained IIFE)
-app.js       everything else: state, storage, rendering, events
+cycles.js    the cycle engine (reset/backfill/sync); render-free by design
+badges.js    60s in-place badge refreshers + checkbox state
+render.js    rendering + the commands that re-render
+modals.js    dialog orchestration (mode builder, tag chips, settings)
+modal.js     the reusable dialog component (focus trap, Escape, focus restore)
+app.js       entry: hydrate, wire buttons, startup sequence, ticker
 tests/       node:test suites for logic.js (zero dependencies)
 roadmap.txt  the build log: 14 goals, decisions and adjustments
 ```
 
-`logic.js` is a classic script shared by the page and the tests: it holds the pure
-part of the app (no DOM, no storage) — `nextCycleBoundary`, `countdownInfo`,
-`appointmentInfo`, `sinceInfo`, `doneCounts`, `dayStreak`, `streakOnBoundary`,
-anchor normalization — extracted verbatim so the exact code that runs in the browser
+The import graph is acyclic and documented in `state.js`; `app.js` is the only module
+that touches everyone. `logic.js` is a native ES module shared by the page and the
+tests: it holds the pure part of the app (no DOM, no storage) — `nextCycleBoundary`,
+`countdownInfo`, `appointmentInfo`, `sinceInfo`, `doneCounts`, `dayStreak`,
+`streakOnBoundary`, anchor normalization — so the exact code that runs in the browser
 is the code under test.
 
 ## Tests
 
 ```bash
 npm test        # node --test, no packages to install
+npm run lint    # eslint (dev-only dependency)
 ```
 
-62 tests in 5 files, covering the behaviors the roadmap committed to:
+79 tests in 7 files, covering the behaviors the roadmap committed to:
 
 - **cycles** – hour math is true elapsed time across DST (spring-forward and
   fall-back), calendar boundaries land on the configured anchor, `N > 1` epoch
@@ -104,18 +119,25 @@ npm test        # node --test, no packages to install
 - **countdown / appointment / since** – every ladder step, exact boundaries
   (24 h, 10-minute floor, 7 days, 30 days), sticky "now", invalid input;
 - **stats** – week bucket honors the anchor's `weekStartDay`, midnight rollover,
-  day-streak rules (including "today isn't dead until the day ends").
+  day-streak rules (including "today isn't dead until the day ends");
+- **boundaries / counters** – table-driven suites: DST transitions for day/week/month
+  (asserting true elapsed hours, not just wall clock), all seven `weekStartDay`
+  values, streak gap tables, anchor variants.
+
+CI runs lint, `prettier --check` and the tests on Node 20 and 22 for every push and
+pull request.
 
 ## How it was built
 
 `roadmap.txt` is the full build log: fourteen goals, each with its decisions,
 edge cases, adjustments discovered on the way, and a dated changelog. `improvementPlan.txt`
-records the portfolio review that shaped the current structure.
+records the portfolio review that shaped the current structure (module split, tests,
+CI, robustness).
 
 ## What's next
 
-- ES module split with `npm run dev` server, CI running `npm test` on every push
-- Focus trap + full keyboard audit of the dialogs, `try/catch` around every save
+- Make the process story easier to find: link the roadmap from the README header,
+  goal-by-goal commit narrative
 - Optional: sync across devices, PWA offline install
 
 ## License

@@ -11,6 +11,7 @@ All decisions, changes and progress are registered in this file, same
 as the roadmap.
 
 CURRENT GRADE: 5/10 (code: 7/10)  ->  ~7/10 after Phase 1 (2026-10-08)
+                             ->  ~8/10 after Phase 2 (2026-10-08)
 --------------------------------
 Signals a recruiter sees in the first 30 seconds:
 - README: MISSING - instant "incomplete" read, caps the grade alone.
@@ -91,21 +92,64 @@ Phase 1 - Quick wins (half a day, 5 -> ~7):  [DONE 2026-10-08]
       other checklist inconsistency (added the missing "Fourteenth
       goal defined" and "reviewed" changelog lines).
 
-Phase 2 - Structural (a few days, 7 -> 8):
-[ ] 6. Split app.js with native ES modules
+Phase 2 - Structural (a few days, 7 -> 8):  [DONE 2026-10-08]
+[x] 6. Split app.js with native ES modules
       (<script type="module">): storage.js, cycles.js, badges.js,
       render.js, modals.js. No build step, the "no tools" philosophy
       survives intact and the monolith criticism disappears.
-[ ] 7. Unit-test the pure functions properly: nextCycleBoundary (DST,
+      DONE as 8 commits, one per concern: 1,499-line app.js ->
+      state.js (store, no imports) / storage.js (loaders+saves,
+      hydrate) / cycles.js (engine, render-free) / badges.js /
+      render.js (view + re-rendering commands) / modals.js /
+      app.js entry (~100 lines). Acyclic import graph documented
+      in state.js; logic.js/modal.js gained real exports (the
+      CommonJS shim is gone). Tests converted to ESM
+      (type:module). One real bug caught by review before running:
+      hydrate() must bridge globalThis.cycleAnchor BEFORE
+      loadTasks() - its legacy migration calls nextCycleBoundary
+      and ESM strict mode would throw otherwise.
+      KNOWN COST (correction to the original plan): ES modules
+      need an HTTP origin, so file:// opening no longer works.
+      README quick start is serve-only now; the live demo is
+      unaffected. Recorded as the one real cost of this choice.
+[x] 7. Unit-test the pure functions properly: nextCycleBoundary (DST,
       N>1 epoch phasing, anchor changes) and doneCounts/dayStreak -
       date math deserves a table-driven suite. Best evidence of "I
       write testable code".
-[ ] 8. CI workflow: lint (ESLint + Prettier) + node --test on every
+      DONE: two table-driven suites - boundaries.test.js (DST
+      spring/fall for day/week/month asserting true ELAPSED hours
+      - 743h March, 169h fall-back week, 24.5h day, 1h across the
+      spring jump; month every=3 Jan/Apr/Jul/Oct phasing incl.
+      exact boundary; week every=2 epoch phase; every anchor
+      variant) and counters.test.js (all 7 weekStartDay values,
+      midnight rollover for today AND week bucket, 9-row streak
+      gap table, not-dead-until-day-ends incl. the 25h day).
+      Every expectation computed against the implementation under
+      the pinned TZ before hardcoding. 62 -> 79 tests.
+[x] 8. CI workflow: lint (ESLint + Prettier) + node --test on every
       push. Green badge in the README does real work with recruiters.
-[ ] 9. Robustness: try/catch around every saveTasks/saveCategories/
+      DONE: ci.yml (push+PR, Node 20/22 matrix, npm ci -> lint ->
+      format:check -> test, read-only permissions). ESLint 10 flat
+      config (browser app / node tests / the two bridged globals
+      declared); Prettier printWidth 100 with a dedicated
+      formatting-only commit. CORRECTION: the plan's quoted glob
+      test script (node --test "tests/**/*.test.js") only expands
+      on Node >= 21 - CI would have failed the Node 20 leg; bare
+      `node --test` finds the same 79 tests on both.
+[x] 9. Robustness: try/catch around every saveTasks/saveCategories/
       saveDoneLog/saveCycleAnchor; focus trap in modal.js (Tab cycles
       inside the dialog); clear the 60s interval on page hide/unload;
       add favicon, meta description and an OG image.
+      DONE: shared persist() guard (a full/disabled localStorage no
+      longer breaks the click that caused it - warn and continue);
+      Tab/Shift+Tab trap (inert while closed, skips hidden
+      controls, smoke drives 15 Tabs each way and asserts focus
+      never escapes); ticker pauses on visibilitychange(hidden)/
+      pagehide and restarts with an immediate catch-up tick;
+      hand-written favicon.svg + meta description + OG tags with
+      docs/og.png (1200x630 card rendered from the app's own
+      design language: title, feature chips, three mock tasks with
+      real badges).
 
 Phase 3 - Differentiation (8 -> 9):
 [ ] 10. Make the process visible: rename roadmap.txt to
@@ -119,8 +163,8 @@ GRADING TARGET
 --------------
 - Current: 5/10 portfolio (code 7/10).
 - After phase 1: ~7/10.  [REACHED 2026-10-08]
-- After phase 2: ~8/10.
-- Phase 3 polish: 7.5-8/10 defensible grade.
+- After phase 2: ~8/10.  [REACHED 2026-10-08]
+- Phase 3 polish: 8.5-9/10 defensible grade.
 
 CHANGE LOG
 ----------
@@ -150,3 +194,29 @@ CHANGE LOG
   the intended multi-tag duplication).
   Grade after Phase 1: ~7/10. Phase 2 (ES modules, CI, focus trap,
   save try/catch) remains open.
+- 2026-10-08: Phase 2 complete - all 4 tasks done, 8 commits (local
+  only, NOT pushed): Split app.js into ES modules / Add table-driven
+  boundary and streak tests / Add ESLint and Prettier with npm
+  scripts / Format the codebase with Prettier / Add GitHub Actions
+  CI / Harden saves, trap modal focus, pause the ticker / Add
+  favicon, meta description and social preview / this update.
+  Two plan corrections found while executing:
+  - task 6: ES modules kill file:// (module CORS) - the README
+    quick start is serve-only now and the smoke harness serves
+    over http. Accepted as the one real cost of "full ESM
+    everywhere"; the live demo is unaffected.
+  - task 8: the quoted-glob test script only works on Node >= 21,
+    so the Node 20 matrix leg would have failed CI - switched to
+    bare `node --test` (same 79 tests on 20 and 22).
+  One real bug caught by review during the split (never shipped):
+  hydrate() bridged globalThis.cycleAnchor AFTER loadTasks(),
+  whose legacy-task migration calls nextCycleBoundary - strict
+  mode would have thrown on old-format stored data. Fixed + a
+  throwaway migration check verified the path.
+  Verification at commit time: 79/79 tests (Node 20 and 22),
+  ESLint clean, prettier --check clean, headless smoke green
+  (zero console errors, all badge types, stats, done section,
+  15 Tabs + 15 Shift+Tabs never leave the dialog), screenshots
+  byte-identical after the module split and the format pass.
+  Grade after Phase 2: ~8/10. Phase 3 (process narrative,
+  docs/ROADMAP.md) remains open.
