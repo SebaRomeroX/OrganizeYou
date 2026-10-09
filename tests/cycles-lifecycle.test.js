@@ -322,3 +322,23 @@ describe("changing the cycle restart time (settings)", () => {
     assert.equal(fresh.cycle.dueAt, at(2026, 9, 6, 21, 15));
   });
 });
+
+describe("main checkbox on an already-completed compound task", () => {
+  it("unticking the main checkbox is a full reset (approved behavior)", () => {
+    const t = addCompound(3);
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleSubtask(t.id, "sub1");
+    render.toggleTask(t.id);
+    assert.equal(t.done, true);
+    assert.equal(t.repeats.current, 3);
+
+    // Clicking the main checkbox of a completed compound task
+    // starts a new cycle right away: counter and subtasks cleared
+    render.toggleTask(t.id);
+
+    assert.equal(t.done, false);
+    assert.equal(t.repeats.current, 0);
+    assert.ok(t.subtasks.every((s) => !s.done));
+    assert.equal(t.cycle.dueAt, null, "no progress left: nothing pending");
+  });
+});
