@@ -89,10 +89,13 @@ export function backfillPartialCycles() {
   return changed;
 }
 
-// Re-anchor pending cycle resets after the global setting changed;
-// runs the reset check right away so an anchor that already passed
-// fires immediately. Returns true if a task actually reset.
+// Re-anchor pending cycle resets after the global setting changed.
+// Tasks that are ALREADY due reset first: re-anchoring would
+// overwrite their past dueAt with the next (future) boundary and
+// silently postpone the reset by up to a full cycle. Returns true
+// if a task reset or a deadline moved (both warrant a re-render).
 export function applyCycleAnchor() {
+  const reset = resetDueCycles();
   let changed = false;
   store.tasks.forEach((t) => {
     // Re-anchor done tasks and started-but-unfinished ones (their
@@ -107,5 +110,5 @@ export function applyCycleAnchor() {
     }
   });
   if (changed) saveTasks();
-  return resetDueCycles();
+  return reset || changed;
 }

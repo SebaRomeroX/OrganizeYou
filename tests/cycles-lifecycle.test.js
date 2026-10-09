@@ -7,7 +7,7 @@
 // repeat counter AND subtask ticks together.
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { resetAnchor, normalizeCycleAnchor } from "./helpers.js";
+import { normalizeCycleAnchor } from "./helpers.js";
 import { store, storage, cycles, render, setNow, resetApp, RealDate } from "./app-harness.js";
 
 const at = (y, m, d, h = 0, min = 0) => new RealDate(y, m, d, h, min, 0, 0).getTime();
@@ -27,9 +27,12 @@ function addCompound(subCount = 3, target = subCount) {
   return store.tasks.at(-1);
 }
 
+// Note: no resetAnchor() here - in the browser hydrate() bridges
+// store.cycleAnchor onto globalThis and the settings modal mutates
+// that same object; the tests must keep the same identity or the
+// anchor changes would never reach logic.js
 beforeEach(() => {
   resetApp();
-  resetAnchor();
 });
 
 describe("daily compound task (repeats + subtasks + cycle)", () => {
