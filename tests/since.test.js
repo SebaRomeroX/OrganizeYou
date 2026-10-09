@@ -1,9 +1,9 @@
 // Time-since ladder: nowStamp, sinceMoment, sinceInfo. Mirrors
 // the roadmap's goal 12 harness (count-up ladder, future clamp,
 // date-only 00:00, invalid input).
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const { nowStamp, sinceMoment, sinceInfo } = require("./helpers.cjs");
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { nowStamp, sinceMoment, sinceInfo } from "./helpers.js";
 
 // Fixed "now": 2026-10-08 10:00 local (pinned TZ in helpers)
 const NOW = new Date(2026, 9, 8, 10, 0, 0, 0);

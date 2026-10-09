@@ -2,9 +2,9 @@
 // normalization. Mirrors the roadmap's goal 8 (hour = true
 // elapsed), goal 9 (anchor-aware day/week/month) and goal 5
 // (N>1 epoch phasing) harness claims.
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const { nextCycleBoundary, cycleLabel, normalizeCycleAnchor, defaultCycleAnchor, setAnchor, resetAnchor } = require("./helpers.cjs");
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { nextCycleBoundary, cycleLabel, normalizeCycleAnchor, defaultCycleAnchor, setAnchor, resetAnchor } from "./helpers.js";
 
 const at = (y, m, d, h = 0, min = 0) => new Date(y, m, d, h, min, 0, 0);
 const boundary = (cycle, from) => new Date(nextCycleBoundary(cycle, from));

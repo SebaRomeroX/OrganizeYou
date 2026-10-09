@@ -1,6 +1,6 @@
-// OrganizeYou - reusable modal component (vanilla JS)
+// OrganizeYou - reusable modal component (vanilla JS, ES module)
 
-const Modal = (() => {
+export const Modal = (() => {
   const backdrop = document.getElementById("modal-backdrop");
   const dialog = document.getElementById("modal");
   const titleEl = document.getElementById("modal-title");

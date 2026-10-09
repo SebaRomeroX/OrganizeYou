@@ -1,9 +1,9 @@
 // Appointment ladder: appointmentMoment, appointmentLocked,
 // appointmentInfo. Mirrors the roadmap's goal 11 harness (00:00
 // unlock boundary, sticky "now", mutual lock).
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const { appointmentMoment, appointmentLocked, appointmentInfo } = require("./helpers.cjs");
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { appointmentMoment, appointmentLocked, appointmentInfo } from "./helpers.js";
 
 // Fixed "now": 2026-10-08 10:00 local (pinned TZ in helpers)
 const NOW = new Date(2026, 9, 8, 10, 0, 0, 0);

@@ -1,9 +1,9 @@
 // Deadline countdown ladder: countdownInfo. Mirrors the roadmap's
 // goal 10 harness (date-only vs timed deadlines, exact
 // boundaries, invalid input).
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const { countdownInfo } = require("./helpers.cjs");
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { countdownInfo } from "./helpers.js";
 
 // Fixed "now": 2026-10-08 10:00 local (pinned TZ in helpers)
 const NOW = new Date(2026, 9, 8, 10, 0, 0, 0);

@@ -1,24 +1,22 @@
 // OrganizeYou - pure logic: cycle math, badge ladders, counters
 //
 // Extracted verbatim from app.js so the Node test runner can run
-// this code without a DOM. Loaded as a classic script BEFORE
-// app.js: every function is a global declaration, so the app
-// keeps calling them exactly as before. Two globals from app.js
-// are read at CALL time (never at load time):
+// this code without a DOM. Now a native ES module: the browser
+// imports it from app.js modules and the Node tests import the
+// exact same file - one implementation, two consumers, no build
+// step. Two globals are read at CALL time (never at load time):
 //   - cycleAnchor: the cycle reset setting (time / week start /
 //     month start / month anchor), read by nextCycleBoundary,
 //     anchorMinutes and doneCounts
 //   - doneLog:     default argument of doneCounts / dayStreak
-// In the browser both exist by the time any function here runs
-// (cycleAnchor is initialized on line 11 of app.js, before the
-// first call); in Node tests tests/helpers.cjs provides them.
+// In the browser storage.hydrate() installs both on globalThis
+// before the first call; in Node tests tests/helpers.js provides
+// them.
 //
 // No DOM, no localStorage: every input arrives as an argument
 // and every result is a return value - that is what makes this
-// file testable. "use strict" marks the start of the new code
-// the review asked for; app.js stays untouched until the module
-// split.
-"use strict";
+// file testable. ES modules are strict by default, so the old
+// "use strict" directive is gone.
 
 /* ---------- Completion counters ---------- */
 
@@ -363,27 +361,25 @@ function normalizeCycleAnchor(a) {
   };
 }
 
-/* ---------- Exports for the Node test runner ---------- */
-// The browser has no `module`, so this guard is skipped there
-// and the functions stay plain globals.
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    doneCounts,
-    dayStreak,
-    anchorMinutes,
-    dayNumInstant,
-    monthInstant,
-    nextCycleBoundary,
-    cycleLabel,
-    countdownInfo,
-    appointmentMoment,
-    appointmentLocked,
-    appointmentInfo,
-    nowStamp,
-    sinceMoment,
-    sinceInfo,
-    streakOnBoundary,
-    defaultCycleAnchor,
-    normalizeCycleAnchor,
-  };
-}
+/* ---------- Exports ---------- */
+// The 17 functions the app and the tests share; every consumer
+// imports them by name (no globals, no CommonJS shim).
+export {
+  doneCounts,
+  dayStreak,
+  anchorMinutes,
+  dayNumInstant,
+  monthInstant,
+  nextCycleBoundary,
+  cycleLabel,
+  countdownInfo,
+  appointmentMoment,
+  appointmentLocked,
+  appointmentInfo,
+  nowStamp,
+  sinceMoment,
+  sinceInfo,
+  streakOnBoundary,
+  defaultCycleAnchor,
+  normalizeCycleAnchor,
+};

@@ -1,9 +1,9 @@
 // Done counters and streaks: doneCounts, dayStreak,
 // streakOnBoundary. Mirrors the roadmap's goal 13 (counter
 // harness) and goal 14 (streak harness) claims.
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const { doneCounts, dayStreak, streakOnBoundary, setAnchor, resetAnchor } = require("./helpers.cjs");
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { doneCounts, dayStreak, streakOnBoundary, setAnchor, resetAnchor } from "./helpers.js";
 
 // Fixed "now": Thursday 2026-10-08 10:00 local, default anchor
 // (week starts Monday Oct 5, month started Oct 1, year Jan 1)
