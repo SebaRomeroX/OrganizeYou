@@ -56,4 +56,29 @@ describe("daily compound task (repeats + subtasks + cycle)", () => {
     );
     assert.equal(t.cycle.dueAt, null, "nothing pending after the reset");
   });
+
+  it("resets fully at the boundary when completed via the subtasks", () => {
+    const t = addCompound(3);
+
+    // Every subtask tick grows the counter; the third completes it
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleSubtask(t.id, "sub1");
+    render.toggleSubtask(t.id, "sub2");
+
+    assert.equal(t.done, true);
+    assert.equal(t.repeats.current, 3);
+    assert.ok(t.subtasks.every((s) => s.done));
+    assert.equal(t.cycle.dueAt, at(2026, 9, 6));
+
+    setNow(at(2026, 9, 6, 0, 5));
+
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.equal(t.done, false);
+    assert.equal(t.repeats.current, 0);
+    assert.ok(
+      t.subtasks.every((s) => !s.done),
+      "every subtask tick is cleared"
+    );
+    assert.equal(t.cycle.dueAt, null);
+  });
 });
