@@ -111,3 +111,29 @@ describe("subtask-only daily task (subtasks + cycle, no repeats)", () => {
     assert.equal(t.cycle.dueAt, null);
   });
 });
+
+describe("partial progress", () => {
+  it("clears ticked subtasks and counter at the boundary even if never completed", () => {
+    const t = addCompound(4, 5);
+
+    render.toggleSubtask(t.id, "sub1");
+    render.toggleSubtask(t.id, "sub2");
+
+    assert.equal(t.done, false, "below target: still pending");
+    assert.equal(t.repeats.current, 2);
+    // Partial progress is scheduled too - stale ticks must clear
+    // when the cycle turns over
+    assert.equal(t.cycle.dueAt, at(2026, 9, 6));
+
+    setNow(at(2026, 9, 6, 0, 5));
+
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.equal(t.done, false);
+    assert.equal(t.repeats.current, 0);
+    assert.ok(
+      t.subtasks.every((s) => !s.done),
+      "stale subtask ticks are cleared"
+    );
+    assert.equal(t.cycle.dueAt, null);
+  });
+});
