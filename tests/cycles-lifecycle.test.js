@@ -7,7 +7,7 @@
 // repeat counter AND subtask ticks together.
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { resetAnchor } from "./helpers.js";
+import { resetAnchor, normalizeCycleAnchor } from "./helpers.js";
 import { store, storage, cycles, render, setNow, resetApp, RealDate } from "./app-harness.js";
 
 const at = (y, m, d, h = 0, min = 0) => new RealDate(y, m, d, h, min, 0, 0).getTime();
@@ -291,5 +291,34 @@ describe("legacy states from earlier versions", () => {
       "orphan subtask ticks cleared at load"
     );
     assert.equal(t.cycle.dueAt, null);
+  });
+});
+
+describe("changing the cycle restart time (settings)", () => {
+  // KNOWN-RED repro (fixed in a later commit): applyCycleAnchor
+  // re-anchors pending dueAts BEFORE its reset check, and since
+  // nextCycleBoundary is always strictly in the future the already
+  // -due task's deadline gets overwritten - its reset is silently
+  // postponed to the new anchor, up to a full cycle away.
+  it("must not postpone an already-due reset", () => {
+    const t = addCompound(3);
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleTask(t.id); // done, due at the Oct 6 boundary
+
+    // The boundary passes; the user opens the settings modal before
+    // the reset ran and saves a new restart time - the exact
+    // modals.js onSubmit flow
+    setNow(at(2026, 9, 6, 0, 10));
+    Object.assign(store.cycleAnchor, normalizeCycleAnchor({ time: "21:15" }));
+    storage.saveCycleAnchor();
+    cycles.applyCycleAnchor();
+
+    assert.equal(t.done, false, "the due task resets instead of being postponed");
+    assert.equal(t.repeats.current, 0);
+    assert.ok(t.subtasks.every((s) => !s.done));
+    // Tasks that were NOT due yet keep following the new anchor
+    const fresh = addCompound(2);
+    render.toggleSubtask(fresh.id, "sub0");
+    assert.equal(fresh.cycle.dueAt, at(2026, 9, 6, 21, 15));
   });
 });
