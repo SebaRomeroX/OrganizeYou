@@ -209,3 +209,37 @@ describe("app closed across the boundary", () => {
     assert.equal(loaded.cycle.dueAt, null);
   });
 });
+
+describe("app left open across boundaries", () => {
+  it("resets on the first tick after the boundary, then re-resets every cycle", () => {
+    const t = addCompound(3);
+
+    // Day 1: complete
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleSubtask(t.id, "sub1");
+    render.toggleSubtask(t.id, "sub2");
+    assert.equal(t.done, true);
+
+    // The boundary passes while the tab stays open: the 60s tick
+    // runs resetDueCycles() - first call resets, the next one is a
+    // no-op (no re-render churn)
+    setNow(at(2026, 9, 6, 0, 1));
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.equal(cycles.resetDueCycles(), false, "already clean: nothing to reset");
+
+    // Day 2: the user works the task again and completes it
+    render.toggleSubtask(t.id, "sub0");
+    render.toggleSubtask(t.id, "sub1");
+    render.toggleSubtask(t.id, "sub2");
+    assert.equal(t.done, true);
+    assert.equal(t.repeats.current, 3);
+    assert.equal(t.cycle.dueAt, at(2026, 9, 7));
+
+    // Day 3 boundary: same full reset again
+    setNow(at(2026, 9, 7, 0, 1));
+    assert.equal(cycles.resetDueCycles(), true);
+    assert.equal(t.done, false);
+    assert.equal(t.repeats.current, 0);
+    assert.ok(t.subtasks.every((s) => !s.done));
+  });
+});
